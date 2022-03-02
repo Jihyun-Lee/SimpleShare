@@ -33,6 +33,8 @@
         <!-- CTS Verifier BLE CoC Server Test Service -->
         <service android:name=".bluetooth.BleCocServerService" />
 
+        <service android:name=".bluetooth.BluetoothPairingService" />
+
     </application>
 
 </manifest>

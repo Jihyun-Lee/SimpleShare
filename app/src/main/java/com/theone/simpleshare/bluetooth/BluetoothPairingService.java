@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class BluetoothPairingService extends Service {
-    private final static String TAG = BluetoothPairingService.class.getName();
+    private final static String TAG = "BluetoothPairingService";
     public static final boolean DEBUG = true;
 
 
