@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.theone.simpleshare.R;
 import com.theone.simpleshare.bluetooth.BleCocClientService;
+import com.theone.simpleshare.bluetooth.BluetoothPairingService;
 import com.theone.simpleshare.databinding.FragmentHomeBinding;
 
 public class HomeFragment extends Fragment {
@@ -27,6 +28,9 @@ public class HomeFragment extends Fragment {
     private HomeViewModel homeViewModel;
     private FragmentHomeBinding binding;
     private final static String TAG = "HomeFragment";
+    private Intent mIntent;
+    private Context mContext;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         homeViewModel =
@@ -52,26 +56,29 @@ public class HomeFragment extends Fragment {
                 mContext.startService(mIntent);
             }
         });
+        binding.button2.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                mIntent = new Intent(mContext, BluetoothPairingService.class);
+                mIntent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN);
+                Toast.makeText(mContext, "start pairing service",Toast.LENGTH_LONG).show();
+                mContext.startService(mIntent);
+            }
+        });
 
         return root;
     }
 
-    private Intent mIntent;
-    private Context mContext;
     @Override
     public void onResume() {
         super.onResume();
-        /*setInfoResources(R.string.ble_coc_client_test_name,
-                R.string.ble_coc_insecure_client_test_info, -1);*/
         mContext = getActivity();
-
         registerReceiver();
-
     }
 
     private void registerReceiver(){
-        IntentFilter filter = new IntentFilter();
 
+        IntentFilter filter = new IntentFilter();
         filter.addAction(BleCocClientService.BLE_LE_CONNECTED);
         filter.addAction(BleCocClientService.BLE_GOT_PSM);
         filter.addAction(BleCocClientService.BLE_COC_CONNECTED);
@@ -80,7 +87,6 @@ public class HomeFragment extends Fragment {
         filter.addAction(BleCocClientService.BLE_DATA_8BYTES_READ);
         filter.addAction(BleCocClientService.BLE_DATA_LARGEBUF_READ);
         filter.addAction(BleCocClientService.BLE_LE_DISCONNECTED);
-
         filter.addAction(BleCocClientService.BLE_BLUETOOTH_DISCONNECTED);
         filter.addAction(BleCocClientService.BLE_BLUETOOTH_DISABLED);
         filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_SECURE);
@@ -94,14 +100,12 @@ public class HomeFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        //mContext.stopService(mIntent);
         mContext.unregisterReceiver(mBroadcast);
     }
 
@@ -202,51 +206,11 @@ public class HomeFragment extends Fragment {
                     Log.e(TAG, "onReceive: Error: unhandled action=" + action);
             }
 
-//            if (previousPassed != mPassed) {
-//                String logMessage = String.format("Passed Flags has changed from 0x%08X to 0x%08X. Delta=0x%08X",
-//                        previousPassed, mPassed, mPassed ^ previousPassed);
-//                Log.d(TAG, logMessage);
-//            }
-//
-//            mTestAdapter.notifyDataSetChanged();
-
             if (newAction != null) {
                 Log.d(TAG, "Starting " + newAction);
                 startIntent.setAction(newAction);
                 mContext.startService(startIntent);
-//                if (STEP_EXECUTION) {
-//                    closeDialog();
-//                    final boolean showProgressDialogValue = showProgressDialog;
-//                    mDialog = new AlertDialog.Builder(BleCocClientTestBaseActivity.this)
-//                            .setTitle(actionName)
-//                            .setMessage(R.string.ble_test_finished)
-//                            .setCancelable(false)
-//                            .setPositiveButton(R.string.ble_test_next,
-//                                    new DialogInterface.OnClickListener() {
-//                                        @Override
-//                                        public void onClick(DialogInterface dialog, int which) {
-//                                            closeDialog();
-//                                            if (showProgressDialogValue) {
-//                                                showProgressDialog();
-//                                            }
-//                                            startService(startIntent);
-//                                        }
-//                                    })
-//                            .show();
-//                } else {
-//                    if (showProgressDialog) {
-//                        showProgressDialog();
-//                    }
-//                    startService(startIntent);
-//                }
-//            } else {
-//                closeDialog();
-//            }
-//
-//            if (mPassed == PASS_FLAG_ALL) {
-//                Log.d(TAG, "All Tests Passed.");
-//                getPassButton().setEnabled(true);
-//            }
+
             }
         }
     };
