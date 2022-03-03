@@ -1,6 +1,7 @@
 package com.theone.simpleshare.bluetooth;
 
 import android.app.Service;
+import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
@@ -28,6 +29,7 @@ import android.os.ParcelUuid;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +38,13 @@ import java.util.UUID;
 public class BluetoothPairingService extends Service {
     private final static String TAG = "BluetoothPairingService";
     public static final boolean DEBUG = true;
+
+
+    private static final int MSG_CONNECT_TIMEOUT = 1;
+    private static final int MSG_CONNECT = 2;
+
+    private static final int CONNECT_TIMEOUT_MS = 10000;
+    private static final int CONNECT_DELAY = 1000;
 
 
     private static final int TRANSPORT_MODE_FOR_SECURE_CONNECTION = BluetoothDevice.TRANSPORT_LE;
@@ -153,9 +162,44 @@ public class BluetoothPairingService extends Service {
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mScanner = mBluetoothAdapter.getBluetoothLeScanner();
-        mHandler = new Handler();
+
 
         mTaskQueue = new TestTaskQueue(getClass().getName() + "_taskHandlerThread");
+
+
+        mHandler = new Handler() {
+            @Override
+            public void handleMessage(Message m) {
+                switch (m.what) {
+                    case MSG_CONNECT_TIMEOUT:
+                        //failed();
+                        break;
+                    case MSG_CONNECT:
+
+                        if (mA2dpProfile == null) {
+                            break;
+                        }
+                        Log.d(TAG, "call connect");
+                        connect();
+
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+    }
+
+    private void connect() {
+        Log.d(TAG,"connect");
+        try{
+
+            Method connect = Class.forName("android.bluetooth.BluetoothA2dp").getMethod("connect", BluetoothDevice.class);
+            connect.invoke(mA2dpProfile, mDevice);
+
+        }catch(Exception e){
+            Log.d(TAG, e.toString());
+        }
     }
 
     @Override
@@ -691,8 +735,19 @@ public class BluetoothPairingService extends Service {
 
                             //BD/EDR(A2DP) or BLE device.
                             mDevice = device;
-                            mBluetoothGatt = connectGatt(device, BluetoothPairingService.this, false, mSecure,
-                                    mGattCallbacks);
+
+                            if( !mBluetoothAdapter.getProfileProxy(getApplicationContext(), mServiceConnection, BluetoothProfile.A2DP)) {
+                                Log.d(TAG, "A2DP getProfileProxy failed");
+                                mA2dpProfile = null;
+                                break;
+                            }
+                            // regardless of the UUID content, at this point, we're sure we can initiate a
+                            // profile connection.
+                            Log.d(TAG, "send MSG_CONNECT message");
+                            mHandler.sendEmptyMessageDelayed(MSG_CONNECT_TIMEOUT, CONNECT_TIMEOUT_MS);
+                            if (!mHandler.hasMessages(MSG_CONNECT)) {
+                                mHandler.sendEmptyMessageDelayed(MSG_CONNECT, CONNECT_DELAY);
+                            }
                         }
                         break;
                     case BluetoothDevice.BOND_NONE:
@@ -728,11 +783,41 @@ public class BluetoothPairingService extends Service {
                     } else {
                         //etc
                         Log.e(TAG, "Not implemented yet on devClass : " + devClass);
-                        notifyError("Not implemented yet on devClass");
+                        //notifyError("Not implemented yet on devClass");
                     }
 
                 }
             }
         }
     };
+
+    private BluetoothA2dp mA2dpProfile;
+    private BluetoothProfile.ServiceListener mServiceConnection =
+            new BluetoothProfile.ServiceListener() {
+
+                @Override
+                public void onServiceDisconnected(int profile) {
+                    Log.w(TAG, "Service disconnected, perhaps unexpectedly");
+                    //unregisterConnectionStateReceiver();
+                    //closeA2dpProfileProxy();
+                    //failed();
+                }
+
+                @Override
+                public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                    if (DEBUG) {
+                        Log.d(TAG, "Connection made to bluetooth proxy." );
+                    }
+                    mA2dpProfile = (BluetoothA2dp) proxy;
+                    if (DEBUG) {
+                        Log.d(TAG, "Connecting to target: " + mDevice.getAddress() + " name : "+mDevice.getName());
+                    }
+
+                    //registerConnectionStateReceiver();
+                    // We initiate SDP because connecting to A2DP before services are discovered leads to
+                    // error.
+                    //mTarget.fetchUuidsWithSdp();
+                }
+            };
+
 }
