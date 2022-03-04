@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -55,13 +56,39 @@ public class HomeFragment extends Fragment {
         });*/
 
         mRecyclerAdapter = new RecyclerAdapter();
-        mRecyclerView = (RecyclerView) binding.recyclerView;
+        mRecyclerView = binding.recyclerView;
         mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
         mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext, RecyclerView.VERTICAL, false));
         mRecyclerView.setAdapter(mRecyclerAdapter);
+        mRecyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+
+                if(e.getAction() == MotionEvent.ACTION_UP) {
+                    Log.d(TAG, "onInterceptTouchEvent RELEASE");
+                    View child = rv.findChildViewUnder(e.getX(), e.getY());
+                    int position = rv.getChildAdapterPosition(child);
+                    Toast.makeText(mContext, "pos : " + position, Toast.LENGTH_LONG).show();
+                }
+                return false;
+            }
+
+            @Override
+            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+
+                Log.d(TAG, "onTouchEvent");
+
+            }
+
+            @Override
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+                Log.d(TAG, "onRequestDisallowInterceptTouchEvent");
+            }
+        });
+
 
         mItemList = new ArrayList<>();
-        for (int i = 1; i<= 10 ; i++){
+        for (int i = 0; i<= 10 ; i++){
             if(i%2==0){
                 mItemList.add( new Item(R.drawable.ic_home_black_24dp, i+"번", i+" 상태 메시지"));
             } else {
@@ -132,7 +159,7 @@ public class HomeFragment extends Fragment {
         mContext.unregisterReceiver(mBroadcast);
     }
 
-    private BroadcastReceiver mBroadcast = new BroadcastReceiver() {
+    private final BroadcastReceiver mBroadcast = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             boolean showProgressDialog = false;
