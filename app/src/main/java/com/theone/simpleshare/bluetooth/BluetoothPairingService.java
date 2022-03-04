@@ -770,14 +770,13 @@ public class BluetoothPairingService extends Service {
                             devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
                         Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
                         //todo: get specific device to pair.
-                        stopDiscovery();
+                        /*stopDiscovery();
                         if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-
                             if (!device.createBond()) {
                                 notifyError("Failed to call create bond");
                             }
+                        }*/
 
-                        }
 
                     } else {
                         //etc
@@ -791,7 +790,7 @@ public class BluetoothPairingService extends Service {
     };
 
     private BluetoothA2dp mA2dpProfile;
-    private BluetoothProfile.ServiceListener mServiceConnection =
+    private final BluetoothProfile.ServiceListener mServiceConnection =
             new BluetoothProfile.ServiceListener() {
 
                 @Override

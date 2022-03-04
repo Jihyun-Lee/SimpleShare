@@ -1,5 +1,7 @@
 package com.theone.simpleshare.ui.home;
 
+import android.bluetooth.BluetoothClass;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -64,6 +66,8 @@ public class HomeFragment extends Fragment {
             @Override
             public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
 
+                Log.d(TAG, " MotionEvent : " + e.getAction() + "[" + e.getX() + ", "+ e.getY()+"]");
+
                 if(e.getAction() == MotionEvent.ACTION_UP) {
                     Log.d(TAG, "onInterceptTouchEvent RELEASE");
                     View child = rv.findChildViewUnder(e.getX(), e.getY());
@@ -84,17 +88,19 @@ public class HomeFragment extends Fragment {
             public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
                 Log.d(TAG, "onRequestDisallowInterceptTouchEvent");
             }
+
+
         });
 
 
         mItemList = new ArrayList<>();
-        for (int i = 0; i<= 10 ; i++){
+        /*for (int i = 0; i<= 1 ; i++){
             if(i%2==0){
                 mItemList.add( new Item(R.drawable.ic_home_black_24dp, i+"번", i+" 상태 메시지"));
             } else {
                 mItemList.add( new Item(R.drawable.ic_launcher_foreground, i+"번", i+" 상태 메시지"));
             }
-        }
+        }*/
         mRecyclerAdapter.setItemList(mItemList);
 
         binding.button.setOnClickListener(new View.OnClickListener() {
@@ -142,6 +148,9 @@ public class HomeFragment extends Fragment {
         filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_SECURE);
         filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_INSECURE);
         filter.addAction(BleCocClientService.BLE_CLIENT_ERROR);
+
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+
 
         mContext.registerReceiver(mBroadcast, filter);
 
@@ -251,6 +260,31 @@ public class HomeFragment extends Fragment {
                 case BleCocClientService.BLE_BLUETOOTH_MISMATCH_INSECURE:
                     //showErrorDialog(R.string.ble_bluetooth_mismatch_title, R.string.ble_bluetooth_mismatch_insecure_message, true);
                     break;
+                case BluetoothDevice.ACTION_FOUND :
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (device != null) {
+                        int devClass = device.getBluetoothClass().getDeviceClass();
+                        if ( devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
+                            Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
+                            //todo: get specific device to pair.
+                            mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress()));
+                            mRecyclerAdapter.notifyItemInserted(mItemList.size());
+                        } else {
+                            //etc
+                            //Log.e(TAG, "Not implemented yet on devClass : " + devClass);
+                            //notifyError("Not implemented yet on devClass");
+                            if( device.getName() != null) {
+                                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress()));
+                                mRecyclerAdapter.notifyItemInserted(mItemList.size());
+                            }
+                        }
+
+                    }
+                    newAction = null;
 
                 default:
                     Log.e(TAG, "onReceive: Error: unhandled action=" + action);
