@@ -62,36 +62,13 @@ public class HomeFragment extends Fragment {
         mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
         mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext, RecyclerView.VERTICAL, false));
         mRecyclerView.setAdapter(mRecyclerAdapter);
-        mRecyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+
+        mRecyclerAdapter.setOnItemClickListener(new RecyclerAdapter.OnItemClickListener() {
             @Override
-            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
-
-                Log.d(TAG, " MotionEvent : " + e.getAction() + "[" + e.getX() + ", "+ e.getY()+"]");
-
-                if(e.getAction() == MotionEvent.ACTION_UP) {
-                    Log.d(TAG, "onInterceptTouchEvent RELEASE");
-                    View child = rv.findChildViewUnder(e.getX(), e.getY());
-                    int position = rv.getChildAdapterPosition(child);
-                    Toast.makeText(mContext, "pos : " + position, Toast.LENGTH_LONG).show();
-                }
-                return false;
+            public void onItemClick(View v, int pos) {
+                Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
             }
-
-            @Override
-            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
-
-                Log.d(TAG, "onTouchEvent");
-
-            }
-
-            @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-                Log.d(TAG, "onRequestDisallowInterceptTouchEvent");
-            }
-
-
         });
-
 
         mItemList = new ArrayList<>();
         /*for (int i = 0; i<= 1 ; i++){

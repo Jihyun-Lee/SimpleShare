@@ -39,6 +39,13 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         this.mItemList = list;
         notifyDataSetChanged();
     }
+    public interface OnItemClickListener{
+        void onItemClick(View v, int pos);
+    }
+    private  OnItemClickListener mListener=null;
+    public void setOnItemClickListener( OnItemClickListener listener){
+        this.mListener = listener;
+    }
 
     class ViewHolder extends RecyclerView.ViewHolder {
         ImageView profile;
@@ -52,6 +59,15 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
             name = itemView.findViewById(R.id.name);
             message = itemView.findViewById(R.id.message);
 
+            itemView.setOnClickListener( new View.OnClickListener(){
+                @Override
+                public void onClick(View view) {
+                    int pos = getAdapterPosition();
+                    if( pos != RecyclerView.NO_POSITION){
+                        mListener.onItemClick(view, pos);
+                    }
+                }
+            });
 
         }
 
