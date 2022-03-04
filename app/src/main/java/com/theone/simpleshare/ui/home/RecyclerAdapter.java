@@ -39,8 +39,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         this.mItemList = list;
         notifyDataSetChanged();
     }
-    public interface OnItemClickListener{
-        void onItemClick(View v, int pos);
+    public interface OnItemClickListener {
+        void onItemClick(View v, int pos , Item item);
     }
     private  OnItemClickListener mListener=null;
     public void setOnItemClickListener( OnItemClickListener listener){
@@ -64,7 +64,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
                 public void onClick(View view) {
                     int pos = getAdapterPosition();
                     if( pos != RecyclerView.NO_POSITION){
-                        mListener.onItemClick(view, pos);
+                        mListener.onItemClick(view, pos , mItemList.get(pos) );
                     }
                 }
             });

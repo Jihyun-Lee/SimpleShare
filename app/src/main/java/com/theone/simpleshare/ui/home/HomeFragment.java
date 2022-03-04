@@ -35,7 +35,7 @@ public class HomeFragment extends Fragment {
     private HomeViewModel homeViewModel;
     private FragmentHomeBinding binding;
     private final static String TAG = "HomeFragment";
-    private Intent mIntent;
+
     private Context mContext;
     private RecyclerView mRecyclerView;
     private ArrayList<Item> mItemList;
@@ -65,8 +65,16 @@ public class HomeFragment extends Fragment {
 
         mRecyclerAdapter.setOnItemClickListener(new RecyclerAdapter.OnItemClickListener() {
             @Override
-            public void onItemClick(View v, int pos) {
+            public void onItemClick(View v, int pos, Item item) {
                 Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(mContext, BluetoothPairingService.class);
+
+                intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_PAIRING);
+                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device);
+
+                Toast.makeText(mContext, "start pairing service",Toast.LENGTH_LONG).show();
+                mContext.startService(intent);
+
             }
         });
 
@@ -83,24 +91,25 @@ public class HomeFragment extends Fragment {
         binding.button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mIntent = new Intent(mContext, BleCocClientService.class);
-                mIntent.setAction(BleCocClientService.BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT);
+                Intent intent = new Intent(mContext, BleCocClientService.class);
+                intent.setAction(BleCocClientService.BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT);
                 Toast.makeText(mContext, "start coc insecure client service",Toast.LENGTH_LONG).show();
-                mContext.startService(mIntent);
+                mContext.startService(intent);
             }
         });
         binding.button2.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
-                mIntent = new Intent(mContext, BluetoothPairingService.class);
-                mIntent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN);
-                Toast.makeText(mContext, "start pairing service",Toast.LENGTH_LONG).show();
-                mContext.startService(mIntent);
+                Intent intent = new Intent(mContext, BluetoothPairingService.class);
+                intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN);
+                Toast.makeText(mContext, "start scan",Toast.LENGTH_LONG).show();
+                mContext.startService(intent);
             }
         });
 
         return root;
     }
+
 
     @Override
     public void onResume() {
@@ -248,14 +257,14 @@ public class HomeFragment extends Fragment {
                                 devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
                             Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
                             //todo: get specific device to pair.
-                            mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress()));
+                            mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress(), device));
                             mRecyclerAdapter.notifyItemInserted(mItemList.size());
                         } else {
                             //etc
                             //Log.e(TAG, "Not implemented yet on devClass : " + devClass);
                             //notifyError("Not implemented yet on devClass");
                             if( device.getName() != null) {
-                                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress()));
+                                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress(), device));
                                 mRecyclerAdapter.notifyItemInserted(mItemList.size());
                             }
                         }

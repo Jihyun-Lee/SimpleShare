@@ -1,14 +1,18 @@
 package com.theone.simpleshare.ui.home;
 
+import android.bluetooth.BluetoothDevice;
+
 public class Item {
     String name;
     String message;
     int resourceId;
+    BluetoothDevice device;
 
-    public Item(int resourceId, String name, String message) {
+    public Item(int resourceId, String name, String message, BluetoothDevice device) {
         this.name = name;
-        this.message= message;
+        this.message = message;
         this.resourceId = resourceId;
+        this.device = device;
     }
 
     public int getResourceId() {
@@ -34,4 +38,7 @@ public class Item {
     public void setResourceId(int resourceId) {
         this.resourceId = resourceId;
     }
+
+    public void setDevice( BluetoothDevice device ){ this.device = device;}
+    public BluetoothDevice getDevice( ){ return device;}
 }

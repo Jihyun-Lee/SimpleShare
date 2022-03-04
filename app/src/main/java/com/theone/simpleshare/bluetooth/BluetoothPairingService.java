@@ -111,7 +111,11 @@ public class BluetoothPairingService extends Service {
 
     // Literal for Client Action
     public static final String BLUETOOTH_ACTION_START_SCAN =
-            "package com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_START_SCAN";
+            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_START_SCAN";
+
+    public static final String BLUETOOTH_ACTION_START_PAIRING =
+            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_START_PAIRING";
+
 
     private static final UUID SERVICE_UUID =
             UUID.fromString("00009999-0000-1000-8000-00805f9b34fb");
@@ -210,21 +214,41 @@ public class BluetoothPairingService extends Service {
             mTaskQueue.addTask(new Runnable() {
                 @Override
                 public void run() {
-                    onTestFinish(intent.getAction());
+                    onTestFinish(intent);
                 }
             }, EXECUTION_DELAY);
         }
         return START_NOT_STICKY;
     }
 
-    private void onTestFinish(String action) {
-        mCurrentAction = action;
-        Log.d(TAG, "onTestFinish action : " + action);
+    private void onTestFinish(Intent intent) {
+        mCurrentAction = intent.getAction();
+        Log.d(TAG, "onTestFinish action : " + mCurrentAction);
         if (mCurrentAction != null) {
             switch (mCurrentAction) {
                 case BLUETOOTH_ACTION_START_SCAN:
                     //startScan();
                     startDiscovery();
+                    break;
+
+                case BLUETOOTH_ACTION_START_PAIRING:
+                    stopDiscovery();
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if ( device != null){
+                        String name = device.getName();
+                        String address = device.getAddress();
+                        Log.d(TAG, "name : "+name + " address : "+ address);
+                        if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
+                            if (!device.createBond()) {
+                                notifyError("Failed to call create bond");
+                            }
+                        }
+
+                    } else {
+                        Log.e(TAG,"device is null");
+                        notifyError("Failed to get device from discovery");
+                    }
+
 
                     break;
                 case BLE_COC_CLIENT_ACTION_GET_PSM:
@@ -275,8 +299,9 @@ public class BluetoothPairingService extends Service {
         }
         stopDiscovery();
         unregisterReceiver(mBondStatusReceiver);
-
+        Log.d(TAG, "BluetoothPairingService onDestroy");
         mTaskQueue.quit();
+
     }
 
     public static BluetoothGatt connectGatt(BluetoothDevice device, Context context,
