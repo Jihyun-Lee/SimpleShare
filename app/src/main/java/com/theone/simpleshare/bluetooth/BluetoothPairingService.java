@@ -763,9 +763,8 @@ public class BluetoothPairingService extends Service {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device != null) {
                     int devClass = device.getBluetoothClass().getDeviceClass();
-                    if (devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET) {
-                        Log.d(TAG, "AUDIO_VIDEO_WEARABLE_HEADSET device : " + device.getName());
-                    } else if (devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
+                    if ( devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET ||
+                            devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
                             devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER ||
                             devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO ||
                             devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {

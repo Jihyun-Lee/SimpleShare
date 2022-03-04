@@ -17,11 +17,15 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.theone.simpleshare.R;
 import com.theone.simpleshare.bluetooth.BleCocClientService;
 import com.theone.simpleshare.bluetooth.BluetoothPairingService;
 import com.theone.simpleshare.databinding.FragmentHomeBinding;
+
+import java.util.ArrayList;
 
 public class HomeFragment extends Fragment {
 
@@ -30,6 +34,9 @@ public class HomeFragment extends Fragment {
     private final static String TAG = "HomeFragment";
     private Intent mIntent;
     private Context mContext;
+    private RecyclerView mRecyclerView;
+    private ArrayList<Item> mItemList;
+    private RecyclerAdapter mRecyclerAdapter;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -38,14 +45,30 @@ public class HomeFragment extends Fragment {
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
-        final TextView textView = binding.textHome;
+        mContext = getActivity();
+        /*final TextView textView = binding.textHome;
         homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);
             }
-        });
+        });*/
+
+        mRecyclerAdapter = new RecyclerAdapter();
+        mRecyclerView = (RecyclerView) binding.recyclerView;
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext, RecyclerView.VERTICAL, false));
+        mRecyclerView.setAdapter(mRecyclerAdapter);
+
+        mItemList = new ArrayList<>();
+        for (int i = 1; i<= 10 ; i++){
+            if(i%2==0){
+                mItemList.add( new Item(R.drawable.ic_home_black_24dp, i+"번", i+" 상태 메시지"));
+            } else {
+                mItemList.add( new Item(R.drawable.ic_launcher_foreground, i+"번", i+" 상태 메시지"));
+            }
+        }
+        mRecyclerAdapter.setItemList(mItemList);
 
         binding.button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -72,7 +95,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        mContext = getActivity();
+
         registerReceiver();
     }
 
