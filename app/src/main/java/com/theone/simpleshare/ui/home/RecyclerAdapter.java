@@ -47,6 +47,11 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         this.mListener = listener;
     }
 
+    public void clear(){
+        mItemList.clear();
+        notifyDataSetChanged();
+    }
+
     class ViewHolder extends RecyclerView.ViewHolder {
         ImageView profile;
         TextView name;

@@ -29,6 +29,8 @@ import android.os.ParcelUuid;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -38,84 +40,20 @@ import java.util.UUID;
 public class BluetoothPairingService extends Service {
     private final static String TAG = "BluetoothPairingService";
     public static final boolean DEBUG = true;
-
-
     private static final int MSG_CONNECT_TIMEOUT = 1;
     private static final int MSG_CONNECT = 2;
-
+    private static final int MSG_REMOVE_BOND = 3;
     private static final int CONNECT_TIMEOUT_MS = 10000;
     private static final int CONNECT_DELAY = 1000;
 
-
     private static final int TRANSPORT_MODE_FOR_SECURE_CONNECTION = BluetoothDevice.TRANSPORT_LE;
 
-    public static final String BLE_LE_CONNECTED =
-            "com.android.cts.verifier.bluetooth.BLE_LE_CONNECTED";
-    public static final String BLE_GOT_PSM =
-            "com.android.cts.verifier.bluetooth.BLE_GOT_PSM";
-    public static final String BLE_COC_CONNECTED =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CONNECTED";
-    public static final String BLE_CONNECTION_TYPE_CHECKED =
-            "com.android.cts.verifier.bluetooth.BLE_CONNECTION_TYPE_CHECKED";
-    public static final String BLE_DATA_8BYTES_SENT =
-            "com.android.cts.verifier.bluetooth.BLE_DATA_8BYTES_SENT";
-    public static final String BLE_DATA_8BYTES_READ =
-            "com.android.cts.verifier.bluetooth.BLE_DATA_8BYTES_READ";
-    public static final String BLE_DATA_LARGEBUF_READ =
-            "com.android.cts.verifier.bluetooth.BLE_DATA_LARGEBUF_READ";
-    public static final String BLE_LE_DISCONNECTED =
-            "com.android.cts.verifier.bluetooth.BLE_LE_DISCONNECTED";
-
-    public static final String BLE_BLUETOOTH_MISMATCH_SECURE =
-            "com.android.cts.verifier.bluetooth.BLE_BLUETOOTH_MISMATCH_SECURE";
-    public static final String BLE_BLUETOOTH_MISMATCH_INSECURE =
-            "com.android.cts.verifier.bluetooth.BLE_BLUETOOTH_MISMATCH_INSECURE";
-    public static final String BLE_BLUETOOTH_DISABLED =
-            "com.android.cts.verifier.bluetooth.BLE_BLUETOOTH_DISABLED";
-    public static final String BLE_GATT_CONNECTED =
-            "com.android.cts.verifier.bluetooth.BLE_GATT_CONNECTED";
-    public static final String BLE_BLUETOOTH_DISCONNECTED =
-            "com.android.cts.verifier.bluetooth.BLE_BLUETOOTH_DISCONNECTED";
-    public static final String BLE_CLIENT_ERROR =
-            "com.android.cts.verifier.bluetooth.BLE_CLIENT_ERROR";
-    public static final String EXTRA_COMMAND =
-            "com.android.cts.verifier.bluetooth.EXTRA_COMMAND";
-    public static final String EXTRA_WRITE_VALUE =
-            "com.android.cts.verifier.bluetooth.EXTRA_WRITE_VALUE";
-    public static final String EXTRA_BOOL =
-            "com.android.cts.verifier.bluetooth.EXTRA_BOOL";
-
-    // Literal for Client Action
-    public static final String BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT";
-    public static final String BLE_COC_CLIENT_ACTION_LE_SECURE_CONNECT =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_LE_SECURE_CONNECT";
-    public static final String BLE_COC_CLIENT_ACTION_GET_PSM =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_GET_PSM";
-    public static final String BLE_COC_CLIENT_ACTION_COC_CLIENT_CONNECT =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_COC_CLIENT_CONNECT";
-    public static final String BLE_COC_CLIENT_ACTION_CHECK_CONNECTION_TYPE =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_CHECK_CONNECTION_TYPE";
-    public static final String BLE_COC_CLIENT_ACTION_SEND_DATA_8BYTES =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_SEND_DATA_8BYTES";
-    public static final String BLE_COC_CLIENT_ACTION_READ_DATA_8BYTES =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_READ_DATA_8BYTES";
-    public static final String BLE_COC_CLIENT_ACTION_EXCHANGE_DATA =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_EXCHANGE_DATA";
-    public static final String BLE_COC_CLIENT_ACTION_CLIENT_CONNECT =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_CLIENT_CONNECT";
-    public static final String BLE_COC_CLIENT_ACTION_CLIENT_CONNECT_SECURE =
-            "com.android.cts.verifier.bluetooth.BLE_COC_CLIENT_ACTION_CLIENT_CONNECT_SECURE";
-    public static final String BLE_CLIENT_ACTION_CLIENT_DISCONNECT =
-            "com.android.cts.verifier.bluetooth.BLE_CLIENT_ACTION_CLIENT_DISCONNECT";
-
-    // Literal for Client Action
     public static final String BLUETOOTH_ACTION_START_SCAN =
             "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_START_SCAN";
-
     public static final String BLUETOOTH_ACTION_START_PAIRING =
             "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_START_PAIRING";
-
+    public static final String BLUETOOTH_ACTION_REMOVE_BOND =
+            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_REMOVE_BOND";
 
     private static final UUID SERVICE_UUID =
             UUID.fromString("00009999-0000-1000-8000-00805f9b34fb");
@@ -160,7 +98,6 @@ public class BluetoothPairingService extends Service {
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        filter.addAction(BluetoothDevice.ACTION_FOUND);
         registerReceiver(mBondStatusReceiver, filter);
 
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -206,8 +143,21 @@ public class BluetoothPairingService extends Service {
         }
     }
 
+    private void removeBond(BluetoothDevice device) {
+        Log.d(TAG,"removeBond");
+        try{
+
+            Method connect = Class.forName("android.bluetooth.BluetoothDevice").getMethod("removeBond");
+            connect.invoke(device);
+
+        }catch(Exception e){
+            Log.d(TAG, e.toString());
+        }
+    }
+
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
+
         if (!mBluetoothAdapter.isEnabled()) {
             notifyBluetoothDisabled();
         } else {
@@ -221,62 +171,44 @@ public class BluetoothPairingService extends Service {
         return START_NOT_STICKY;
     }
 
-    private void onTestFinish(Intent intent) {
+    private void onTestFinish(@NonNull Intent intent) {
         mCurrentAction = intent.getAction();
         Log.d(TAG, "onTestFinish action : " + mCurrentAction);
         if (mCurrentAction != null) {
             switch (mCurrentAction) {
                 case BLUETOOTH_ACTION_START_SCAN:
-                    //startScan();
                     startDiscovery();
                     break;
 
-                case BLUETOOTH_ACTION_START_PAIRING:
-                    stopDiscovery();
+                case BLUETOOTH_ACTION_START_PAIRING: {
+
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if ( device != null){
+                    stopDiscovery();
+
+                    if (device != null) {
                         String name = device.getName();
                         String address = device.getAddress();
-                        Log.d(TAG, "name : "+name + " address : "+ address);
+                        Log.d(TAG, "name : " + name + " address : " + address);
                         if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
                             if (!device.createBond()) {
                                 notifyError("Failed to call create bond");
                             }
                         }
 
+
                     } else {
-                        Log.e(TAG,"device is null");
+                        Log.e(TAG, "ERROR : device is null");
                         notifyError("Failed to get device from discovery");
                     }
 
-
+                }
                     break;
-                case BLE_COC_CLIENT_ACTION_GET_PSM:
-                    startLeDiscovery();
-                    break;
-                case BLE_COC_CLIENT_ACTION_COC_CLIENT_CONNECT:
-                    leCocClientConnect();
-                    break;
-                case BLE_COC_CLIENT_ACTION_CHECK_CONNECTION_TYPE:
-                    leCheckConnectionType();
-                    break;
-                case BLE_COC_CLIENT_ACTION_SEND_DATA_8BYTES:
-                    sendData8bytes();
-                    break;
-                case BLE_COC_CLIENT_ACTION_READ_DATA_8BYTES:
-                    readData8bytes();
-                    break;
-                case BLE_COC_CLIENT_ACTION_EXCHANGE_DATA:
-                    sendDataLargeBuf();
-                    readDataLargeBuf();
-                    break;
-                case BLE_CLIENT_ACTION_CLIENT_DISCONNECT:
-                    if (mBluetoothGatt != null) {
-                        mBluetoothGatt.disconnect();
+                case BLUETOOTH_ACTION_REMOVE_BOND: {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (device != null) {
+                        removeBond(device);
                     }
-                    if (mChatService != null) {
-                        mChatService.stop();
-                    }
+                }
                     break;
                 default:
                     Log.e(TAG, "Error: Unhandled or invalid action=" + mCurrentAction);
@@ -339,29 +271,29 @@ public class BluetoothPairingService extends Service {
         showMessage(message);
         Log.e(TAG, message);
 
-        Intent intent = new Intent(BLE_CLIENT_ERROR);
-        sendBroadcast(intent);
+       // Intent intent = new Intent(BLE_CLIENT_ERROR);
+       // sendBroadcast(intent);
     }
 
     private void notifyMismatchSecure() {
-        Intent intent = new Intent(BLE_BLUETOOTH_MISMATCH_SECURE);
-        sendBroadcast(intent);
+       // Intent intent = new Intent(BLE_BLUETOOTH_MISMATCH_SECURE);
+       // sendBroadcast(intent);
     }
 
     private void notifyMismatchInsecure() {
-        Intent intent = new Intent(BLE_BLUETOOTH_MISMATCH_INSECURE);
-        sendBroadcast(intent);
+        //Intent intent = new Intent(BLE_BLUETOOTH_MISMATCH_INSECURE);
+        //sendBroadcast(intent);
     }
 
     private void notifyBluetoothDisabled() {
-        Intent intent = new Intent(BLE_BLUETOOTH_DISABLED);
-        sendBroadcast(intent);
+        //Intent intent = new Intent(BLE_BLUETOOTH_DISABLED);
+        //sendBroadcast(intent);
     }
 
     private void notifyConnected() {
         showMessage("Bluetooth LE GATT connected");
-        Intent intent = new Intent(BLE_LE_CONNECTED);
-        sendBroadcast(intent);
+        // Intent intent = new Intent(BLE_LE_CONNECTED);
+        //sendBroadcast(intent);
     }
 
     private void startLeDiscovery() {
@@ -375,8 +307,8 @@ public class BluetoothPairingService extends Service {
 
     private void notifyDisconnected() {
         showMessage("Bluetooth LE disconnected");
-        Intent intent = new Intent(BLE_BLUETOOTH_DISCONNECTED);
-        sendBroadcast(intent);
+        //Intent intent = new Intent(BLE_BLUETOOTH_DISCONNECTED);
+        //sendBroadcast(intent);
     }
 
     private void notifyServicesDiscovered() {
@@ -496,8 +428,8 @@ public class BluetoothPairingService extends Service {
                     if (DEBUG) {
                         Log.d(TAG, "onCharacteristicRead: reading PSM=" + mPsm);
                     }
-                    Intent intent = new Intent(BLE_GOT_PSM);
-                    sendBroadcast(intent);
+                    //Intent intent = new Intent(BLE_GOT_PSM);
+                    //sendBroadcast(intent);
                 } else {
                     if (DEBUG) {
                         Log.d(TAG, "onCharacteristicRead: Note: unknown uuid=" + uid);
@@ -660,8 +592,8 @@ public class BluetoothPairingService extends Service {
             Log.d(TAG, "notifyLeCocClientConnected: device=" + mDevice + ", mSecure=" + mSecure);
         }
         showMessage("Bluetooth LE Coc connected");
-        Intent intent = new Intent(BLE_COC_CONNECTED);
-        sendBroadcast(intent);
+        //Intent intent = new Intent(BLE_COC_CONNECTED);
+        //sendBroadcast(intent);
     }
 
     private void leCocClientConnect() {
@@ -688,8 +620,8 @@ public class BluetoothPairingService extends Service {
             return;
         }
         showMessage("LE Coc Connection Type Checked");
-        Intent intent = new Intent(BLE_CONNECTION_TYPE_CHECKED);
-        sendBroadcast(intent);
+        //Intent intent = new Intent(BLE_CONNECTION_TYPE_CHECKED);
+        //sendBroadcast(intent);
     }
 
     private void sendData8bytes() {
@@ -697,7 +629,7 @@ public class BluetoothPairingService extends Service {
 
         final byte[] buf = new byte[]{1, 2, 3, 4, 5, 6, 7, 8};
         mNextWriteExpectedLen = 8;
-        mNextWriteCompletionIntent = BLE_DATA_8BYTES_SENT;
+        //mNextWriteCompletionIntent = BLE_DATA_8BYTES_SENT;
         sendMessage(buf);
     }
 
@@ -716,13 +648,13 @@ public class BluetoothPairingService extends Service {
 
     private void readData8bytes() {
         mNextReadExpectedLen = 8;
-        mNextReadCompletionIntent = BLE_DATA_8BYTES_READ;
+        //mNextReadCompletionIntent = BLE_DATA_8BYTES_READ;
         mNextReadByte = 1;
     }
 
     private void readDataLargeBuf() {
         mNextReadExpectedLen = BleCocServerService.TEST_DATA_EXCHANGE_BUFSIZE;
-        mNextReadCompletionIntent = BLE_DATA_LARGEBUF_READ;
+       // mNextReadCompletionIntent = BLE_DATA_LARGEBUF_READ;
         mNextReadByte = 1;
     }
 
@@ -783,32 +715,6 @@ public class BluetoothPairingService extends Service {
                     default:
                         // wait for next state
                         break;
-                }
-            } else if (action.equals(BluetoothDevice.ACTION_FOUND)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (device != null) {
-                    int devClass = device.getBluetoothClass().getDeviceClass();
-                    if ( devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET ||
-                            devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
-                            devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER ||
-                            devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO ||
-                            devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
-                        Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
-                        //todo: get specific device to pair.
-                        /*stopDiscovery();
-                        if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-                            if (!device.createBond()) {
-                                notifyError("Failed to call create bond");
-                            }
-                        }*/
-
-
-                    } else {
-                        //etc
-                        Log.e(TAG, "Not implemented yet on devClass : " + devClass);
-                        //notifyError("Not implemented yet on devClass");
-                    }
-
                 }
             }
         }

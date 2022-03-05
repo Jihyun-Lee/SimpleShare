@@ -1,12 +1,17 @@
 package com.theone.simpleshare.ui.home;
 
+
+
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -41,6 +46,10 @@ public class HomeFragment extends Fragment {
     private ArrayList<Item> mItemList;
     private RecyclerAdapter mRecyclerAdapter;
 
+    private enum ParingMode {AUTO_PAIRING_MODE, MANUAL_PAIRING_MODE}
+
+    private ParingMode mPairingMode = ParingMode.MANUAL_PAIRING_MODE;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         homeViewModel =
@@ -49,6 +58,7 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         mContext = getActivity();
+
         /*final TextView textView = binding.textHome;
         homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
@@ -66,7 +76,7 @@ public class HomeFragment extends Fragment {
         mRecyclerAdapter.setOnItemClickListener(new RecyclerAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View v, int pos, Item item) {
-                Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
+                //Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(mContext, BluetoothPairingService.class);
 
                 intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_PAIRING);
@@ -79,7 +89,9 @@ public class HomeFragment extends Fragment {
         });
 
         mItemList = new ArrayList<>();
-        /*for (int i = 0; i<= 1 ; i++){
+        /*
+        dummy list
+        for (int i = 0; i<= 1 ; i++){
             if(i%2==0){
                 mItemList.add( new Item(R.drawable.ic_home_black_24dp, i+"번", i+" 상태 메시지"));
             } else {
@@ -87,59 +99,129 @@ public class HomeFragment extends Fragment {
             }
         }*/
         mRecyclerAdapter.setItemList(mItemList);
-
-        binding.button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(mContext, BleCocClientService.class);
-                intent.setAction(BleCocClientService.BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT);
-                Toast.makeText(mContext, "start coc insecure client service",Toast.LENGTH_LONG).show();
-                mContext.startService(intent);
-            }
-        });
-        binding.button2.setOnClickListener(new View.OnClickListener(){
+        binding.manualPairing.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(mContext, BluetoothPairingService.class);
                 intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN);
                 Toast.makeText(mContext, "start scan",Toast.LENGTH_LONG).show();
+
+                mPairingMode = ParingMode.MANUAL_PAIRING_MODE;
+
                 mContext.startService(intent);
+
+                /*refresh rv*/
+                mRecyclerAdapter.clear();
             }
         });
+        binding.autoPairing.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(mContext, BluetoothPairingService.class);
+                intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN);
 
+
+                Toast.makeText(mContext, "start auto pairing",Toast.LENGTH_LONG).show();
+
+                mPairingMode = ParingMode.AUTO_PAIRING_MODE;
+                mContext.startService(intent);
+                /*refresh rv*/
+                mRecyclerAdapter.clear();
+
+            }
+        });
+        binding.bondedDevice.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                drawBondedDevices();
+            }
+        });
         return root;
     }
 
+    private void drawBondedDevices(){
+        BluetoothManager bluetoothManager = (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+
+        /*refresh rv*/
+        mRecyclerAdapter.clear();
+
+        for(BluetoothDevice device :bluetoothAdapter.getBondedDevices()){
+            mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                    device.getAddress(), device));
+
+        }
+    }
+
+    private final BroadcastReceiver mBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            String action = intent.getAction();
+
+            if (action != null) {
+                Log.d(TAG, "Processing " + action);
+            }
+            switch (action) {
+
+                case BluetoothDevice.ACTION_FOUND :
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (device != null) {
+                        int devClass = device.getBluetoothClass().getDeviceClass();
+
+                        /*Deal with A2DP device*/
+                        if ( devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO ||
+                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
+                            Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
+
+                            mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                                    device.getAddress(), device));
+                            mRecyclerAdapter.notifyItemInserted(mItemList.size());
+
+                            if(mPairingMode == ParingMode.AUTO_PAIRING_MODE){
+                                Toast.makeText(mContext, "AUTO PAIR :" +device.getName(),Toast.LENGTH_LONG).show();
+                                Log.d(TAG, "AUTO PAIR :" +device.getName());
+
+                                Intent i = new Intent(mContext, BluetoothPairingService.class);
+                                i.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_PAIRING);
+                                i.putExtra(BluetoothDevice.EXTRA_DEVICE, device);
+
+                                mContext.startService(i);
+                            }
+
+                        } else { /*Others : just display on screen Todo : HID devices such as keyboard, game pad*/
+                            if( device.getName() != null) {
+                                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                                        device.getAddress(), device));
+                                mRecyclerAdapter.notifyItemInserted(mItemList.size());
+                            } else {
+                                Log.w(TAG, "empty device name");
+                            }
+                        }
+
+                    }
+
+                    break;
+
+                default:
+                    Log.e(TAG, "onReceive: Error: unhandled action=" + action);
+            }
+        }
+    };
 
     @Override
     public void onResume() {
         super.onResume();
-
         registerReceiver();
     }
 
     private void registerReceiver(){
-
         IntentFilter filter = new IntentFilter();
-        filter.addAction(BleCocClientService.BLE_LE_CONNECTED);
-        filter.addAction(BleCocClientService.BLE_GOT_PSM);
-        filter.addAction(BleCocClientService.BLE_COC_CONNECTED);
-        filter.addAction(BleCocClientService.BLE_CONNECTION_TYPE_CHECKED);
-        filter.addAction(BleCocClientService.BLE_DATA_8BYTES_SENT);
-        filter.addAction(BleCocClientService.BLE_DATA_8BYTES_READ);
-        filter.addAction(BleCocClientService.BLE_DATA_LARGEBUF_READ);
-        filter.addAction(BleCocClientService.BLE_LE_DISCONNECTED);
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_DISCONNECTED);
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_DISABLED);
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_SECURE);
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_INSECURE);
-        filter.addAction(BleCocClientService.BLE_CLIENT_ERROR);
-
         filter.addAction(BluetoothDevice.ACTION_FOUND);
-
-
         mContext.registerReceiver(mBroadcast, filter);
-
     }
 
     @Override
@@ -153,135 +235,4 @@ public class HomeFragment extends Fragment {
         binding = null;
         mContext.unregisterReceiver(mBroadcast);
     }
-
-    private final BroadcastReceiver mBroadcast = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            boolean showProgressDialog = false;
-            //closeDialog();
-
-            String action = intent.getAction();
-            String newAction = null;
-            // String actionName = null;
-            //long previousPassed = mPassed;
-            final Intent startIntent = new Intent(mContext, BleCocClientService.class);
-            if (action != null) {
-                Log.d(TAG, "Processing " + action);
-            }
-            switch (action) {
-
-                case BleCocClientService.BLE_LE_CONNECTED:
-                    // actionName = getString(R.string.ble_coc_client_le_connect);
-                    //mTestAdapter.setTestPass(TEST_BLE_LE_CONNECTED);
-                    //mPassed |= (1 << TEST_BLE_LE_CONNECTED);
-                    // Start LE Service Discovery and then read the PSM
-                    Log.d(TAG, "BLE_LE_CONNECTED");
-                    newAction = BleCocClientService.BLE_COC_CLIENT_ACTION_GET_PSM;
-                    break;
-
-                case BleCocClientService.BLE_GOT_PSM:
-                    //actionName = getString(R.string.ble_coc_client_get_psm);
-                    //mTestAdapter.setTestPass(TEST_BLE_GOT_PSM);
-                    //mPassed |= (1 << TEST_BLE_GOT_PSM);
-                    // Connect the LE CoC
-                    Log.d(TAG, "BLE_GOT_PSM");
-                    newAction = BleCocClientService.BLE_COC_CLIENT_ACTION_COC_CLIENT_CONNECT;
-                    break;
-
-                case BleCocClientService.BLE_COC_CONNECTED:
-                    //actionName = getString(R.string.ble_coc_client_coc_connect);
-                    //mTestAdapter.setTestPass(TEST_BLE_COC_CONNECTED);
-                    // mPassed |= (1 << TEST_BLE_COC_CONNECTED);
-                    // Check the connection type
-                    newAction = BleCocClientService.BLE_COC_CLIENT_ACTION_CHECK_CONNECTION_TYPE;
-                    break;
-
-                case BleCocClientService.BLE_CONNECTION_TYPE_CHECKED:
-                    //actionName = getString(R.string.ble_coc_client_check_connection_type);
-                    //mTestAdapter.setTestPass(TEST_BLE_CONNECTION_TYPE_CHECKED);
-                    //mPassed |= (1 << TEST_BLE_CONNECTION_TYPE_CHECKED);
-                    // Send 8 bytes
-                    newAction = BleCocClientService.BLE_COC_CLIENT_ACTION_SEND_DATA_8BYTES;
-                    break;
-
-                case BleCocClientService.BLE_DATA_8BYTES_SENT:
-                    //actionName = getString(R.string.ble_coc_client_send_data_8bytes);
-                    //mTestAdapter.setTestPass(TEST_BLE_DATA_8BYTES_SENT);
-                    //mPassed |= (1 << TEST_BLE_DATA_8BYTES_SENT);
-                    // Read 8 bytes
-                    newAction = BleCocClientService.BLE_COC_CLIENT_ACTION_READ_DATA_8BYTES;
-                    break;
-
-                case BleCocClientService.BLE_DATA_8BYTES_READ:
-                    //actionName = getString(R.string.ble_coc_client_receive_data_8bytes);
-                    //mTestAdapter.setTestPass(TEST_BLE_DATA_8BYTES_READ);
-                    //mPassed |= (1 << TEST_BLE_DATA_8BYTES_READ);
-                    // Do data exchanges
-                    newAction = BleCocClientService.BLE_COC_CLIENT_ACTION_EXCHANGE_DATA;
-                    break;
-
-                case BleCocClientService.BLE_DATA_LARGEBUF_READ:
-                    //actionName = getString(R.string.ble_coc_client_data_exchange);
-                    //mTestAdapter.setTestPass(TEST_BLE_DATA_EXCHANGED);
-                    //mPassed |= (1 << TEST_BLE_DATA_EXCHANGED);
-                    // Disconnect
-                    newAction = BleCocClientService.BLE_CLIENT_ACTION_CLIENT_DISCONNECT;
-                    break;
-
-                case BleCocClientService.BLE_BLUETOOTH_DISCONNECTED:
-                    //mTestAdapter.setTestPass(TEST_BLE_CLIENT_DISCONNECTED);
-                    //mPassed |= (1 << TEST_BLE_CLIENT_DISCONNECTED);
-                    // all tests done
-                    newAction = null;
-                    break;
-
-                case BleCocClientService.BLE_BLUETOOTH_DISABLED:
-                    //showErrorDialog(R.string.ble_bluetooth_disable_title, R.string.ble_bluetooth_disable_message, true);
-                    break;
-
-                case BleCocClientService.BLE_BLUETOOTH_MISMATCH_SECURE:
-                    //showErrorDialog(R.string.ble_bluetooth_mismatch_title, R.string.ble_bluetooth_mismatch_secure_message, true);
-                    break;
-
-                case BleCocClientService.BLE_BLUETOOTH_MISMATCH_INSECURE:
-                    //showErrorDialog(R.string.ble_bluetooth_mismatch_title, R.string.ble_bluetooth_mismatch_insecure_message, true);
-                    break;
-                case BluetoothDevice.ACTION_FOUND :
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (device != null) {
-                        int devClass = device.getBluetoothClass().getDeviceClass();
-                        if ( devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
-                            Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
-                            //todo: get specific device to pair.
-                            mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress(), device));
-                            mRecyclerAdapter.notifyItemInserted(mItemList.size());
-                        } else {
-                            //etc
-                            //Log.e(TAG, "Not implemented yet on devClass : " + devClass);
-                            //notifyError("Not implemented yet on devClass");
-                            if( device.getName() != null) {
-                                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(), device.getAddress(), device));
-                                mRecyclerAdapter.notifyItemInserted(mItemList.size());
-                            }
-                        }
-
-                    }
-                    newAction = null;
-
-                default:
-                    Log.e(TAG, "onReceive: Error: unhandled action=" + action);
-            }
-
-            if (newAction != null) {
-                Log.d(TAG, "Starting " + newAction);
-                startIntent.setAction(newAction);
-                mContext.startService(startIntent);
-
-            }
-        }
-    };
 }
