@@ -10,7 +10,7 @@ public class PairingViewModel extends ViewModel {
 
     public PairingViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("This is home fragment");
+        mText.setValue("This is pairing fragment");
     }
 
     public LiveData<String> getText() {

@@ -40,6 +40,16 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         this.mItemList = list;
         notifyDataSetChanged();
     }
+    public Item getItemFromList(int position){
+        return this.mItemList.get(position);
+    }
+
+    public void removeItemFromList(int position){
+        this.mItemList.remove(position);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, getItemCount());
+    }
+
     public interface OnItemClickListener {
         void onItemClick(View v, int pos , Item item);
     }

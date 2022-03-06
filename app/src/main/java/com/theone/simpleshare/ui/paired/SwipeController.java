@@ -41,18 +41,18 @@ class SwipeController extends ItemTouchHelper.Callback {
 
     @Override
     public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-        Log.d(TAG, "onMove");
+
         return false;
     }
 
     @Override
     public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-        Log.d(TAG, "onSwiped");
+
     }
 
     @Override
     public int convertToAbsoluteDirection(int flags, int layoutDirection) {
-        Log.d(TAG, "convertToAbsoluteDirection swipeBack="+swipeBack);
+
         if (swipeBack) {
             swipeBack = buttonShowedState != ButtonsState.GONE;
             return 0;
@@ -62,13 +62,13 @@ class SwipeController extends ItemTouchHelper.Callback {
 
     @Override
     public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-        Log.d(TAG,"onChildDraw");
+
         if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-            Log.d(TAG, "ItemTouchHelper.ACTION_STATE_SWIPE");
+
             if (buttonShowedState != ButtonsState.GONE) {
                 if (buttonShowedState == ButtonsState.LEFT_VISIBLE) dX = Math.max(dX, buttonWidth);
                 if (buttonShowedState == ButtonsState.RIGHT_VISIBLE) dX = Math.min(dX, -buttonWidth);
-                Log.d(TAG, "dX="+dX + " dy="+dY);
+
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
             else {
@@ -90,7 +90,7 @@ class SwipeController extends ItemTouchHelper.Callback {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 swipeBack = event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_UP;
-                Log.d(TAG, "setTouchDownListener ACTION_UP or ACTION_CANCEL swipeback:" + swipeBack);
+
                 if (swipeBack) {
 
                     if (dX < -buttonWidth) {
@@ -118,7 +118,6 @@ class SwipeController extends ItemTouchHelper.Callback {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    Log.d(TAG, "setTouchDownListener ACTION_DOWN");
                     setTouchUpListener(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
                 }
                 return false;
@@ -171,7 +170,7 @@ class SwipeController extends ItemTouchHelper.Callback {
     }
 
     private void drawButtons(Canvas c, RecyclerView.ViewHolder viewHolder) {
-        Log.d(TAG, "drawButtons");
+
         float buttonWidthWithoutPadding = buttonWidth - 20;
         float corners = 16;
 
@@ -211,8 +210,6 @@ class SwipeController extends ItemTouchHelper.Callback {
     public void onDraw(Canvas c) {
         if (currentItemViewHolder != null) {
             drawButtons(c, currentItemViewHolder);
-        } else {
-            Log.d(TAG, "onDraw currentItemViewHolder is null");
         }
     }
 }

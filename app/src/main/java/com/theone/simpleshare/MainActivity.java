@@ -61,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
                         CTS_VERIFIER_PERMISSION_REQUEST);
             }
         }
+
+        getSupportActionBar().hide();
     }
 
     @Override

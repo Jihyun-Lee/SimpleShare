@@ -15,6 +15,7 @@
         android:name="com.theone.simpleshare.ui.paired.PairedFragment"
         android:label="@string/title_paired_list"
         tools:layout="@layout/fragment_paired" />
+
     <fragment
         android:id="@+id/navigation_coc_server"
         android:name="com.theone.simpleshare.ui.cocserver.CocServerFragment"
@@ -26,4 +27,6 @@
         android:name="com.theone.simpleshare.ui.cocclient.CocClientFragment"
         android:label="@string/title_coc_client"
         tools:layout="@layout/fragment_coc_client" />
+
+
 </navigation>

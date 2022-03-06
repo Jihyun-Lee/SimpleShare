@@ -3,7 +3,6 @@ package com.theone.simpleshare.ui.paired;
 
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
@@ -30,14 +29,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.theone.simpleshare.R;
 import com.theone.simpleshare.bluetooth.BluetoothPairingService;
 import com.theone.simpleshare.databinding.FragmentPairedBinding;
-import com.theone.simpleshare.databinding.FragmentPairingBinding;
 
 import java.util.ArrayList;
 import java.util.Set;
 
 public class PairedFragment extends Fragment {
 
-    private PairedViewModel pairingViewModel;
+    private PairedViewModel pairedViewModel;
     private FragmentPairedBinding binding;
     private final static String TAG = "HomeFragment";
 
@@ -50,7 +48,7 @@ public class PairedFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        pairingViewModel =
+        pairedViewModel =
                 new ViewModelProvider(this).get(PairedViewModel.class);
 
         binding = FragmentPairedBinding.inflate(inflater, container, false);
@@ -58,7 +56,7 @@ public class PairedFragment extends Fragment {
         mContext = getActivity();
 
 
-        pairingViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        pairedViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 //textView.setText(s);
@@ -83,7 +81,6 @@ public class PairedFragment extends Fragment {
             public void onItemClick(View v, int pos, Item item) {
                 Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
 
-
             }
         });
 
@@ -97,9 +94,16 @@ public class PairedFragment extends Fragment {
             public void onRightClicked(int position) {
                 //Todo: remove bond
                 Toast.makeText(getActivity(), "onRightClicked : "+position,Toast.LENGTH_SHORT).show();
-               /* mRecyclerAdapter.players.remove(position);
-                mRecyclerAdapter.notifyItemRemoved(position);
-                mRecyclerAdapter.notifyItemRangeChanged(position, mAdapter.getItemCount());*/
+
+                Intent intent = new Intent(mContext, BluetoothPairingService.class);
+                intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_REMOVE_BOND);
+                Item item = mRecyclerAdapter.getItemFromList(position);
+                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device);
+                mContext.startService(intent);
+
+                mRecyclerAdapter.removeItemFromList(position);
+
+
             }
 
             @Override
@@ -132,9 +136,9 @@ public class PairedFragment extends Fragment {
 
             for (BluetoothDevice device : devSet) {
                 Log.d(TAG, "add : " + device.getName());
-                for( int i = 0 ; i < 20; i++)
-                    mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
-                            device.getAddress(), device));
+
+                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                        device.getAddress(), device));
 
             }
         } else {

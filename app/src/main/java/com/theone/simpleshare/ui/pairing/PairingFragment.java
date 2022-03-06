@@ -33,7 +33,7 @@ public class PairingFragment extends Fragment {
 
     private PairingViewModel pairingViewModel;
     private FragmentPairingBinding binding;
-    private final static String TAG = "HomeFragment";
+    private final static String TAG = "PairingFragment";
 
     private Context mContext;
     private RecyclerView mRecyclerView;
@@ -83,15 +83,7 @@ public class PairingFragment extends Fragment {
         });
 
         mItemList = new ArrayList<>();
-        /*
-        dummy list
-        for (int i = 0; i<= 1 ; i++){
-            if(i%2==0){
-                mItemList.add( new Item(R.drawable.ic_home_black_24dp, i+"번", i+" 상태 메시지"));
-            } else {
-                mItemList.add( new Item(R.drawable.ic_launcher_foreground, i+"번", i+" 상태 메시지"));
-            }
-        }*/
+
         mRecyclerAdapter.setItemList(mItemList);
         binding.manualPairing.setOnClickListener(new View.OnClickListener(){
             @Override
