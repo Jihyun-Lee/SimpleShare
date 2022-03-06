@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,8 +19,11 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -41,9 +45,7 @@ public class PairedFragment extends Fragment {
     private RecyclerView mRecyclerView;
     private ArrayList<Item> mItemList;
     private RecyclerAdapter mRecyclerAdapter;
-
-
-
+    private SwipeController mSwipeController;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -55,13 +57,20 @@ public class PairedFragment extends Fragment {
         View root = binding.getRoot();
         mContext = getActivity();
 
-        /*final TextView textView = binding.textHome;
-        homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+
+        pairingViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
-                textView.setText(s);
+                //textView.setText(s);
             }
-        });*/
+        });
+
+        setupRecyclerView();
+        drawBondedDevices();
+
+        return root;
+    }
+    private void setupRecyclerView() {
 
         mRecyclerAdapter = new RecyclerAdapter();
         mRecyclerView = binding.recyclerView;
@@ -72,28 +81,44 @@ public class PairedFragment extends Fragment {
         mRecyclerAdapter.setOnItemClickListener(new RecyclerAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View v, int pos, Item item) {
-                //Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
+                Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
 
 
             }
         });
 
         mItemList = new ArrayList<>();
-        /*
-        dummy list
-        for (int i = 0; i<= 1 ; i++){
-            if(i%2==0){
-                mItemList.add( new Item(R.drawable.ic_home_black_24dp, i+"번", i+" 상태 메시지"));
-            } else {
-                mItemList.add( new Item(R.drawable.ic_launcher_foreground, i+"번", i+" 상태 메시지"));
-            }
-        }*/
         mRecyclerAdapter.setItemList(mItemList);
-        drawBondedDevices();
 
-        return root;
+
+
+        mSwipeController = new SwipeController(new SwipeControllerActions() {
+            @Override
+            public void onRightClicked(int position) {
+                //Todo: remove bond
+                Toast.makeText(getActivity(), "onRightClicked : "+position,Toast.LENGTH_SHORT).show();
+               /* mRecyclerAdapter.players.remove(position);
+                mRecyclerAdapter.notifyItemRemoved(position);
+                mRecyclerAdapter.notifyItemRangeChanged(position, mAdapter.getItemCount());*/
+            }
+
+            @Override
+            public void onLeftClicked(int position) {
+                //Todo: edit
+                Toast.makeText(getActivity(), "onLeftClicked : "+position,Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        ItemTouchHelper itemTouchhelper = new ItemTouchHelper(mSwipeController);
+        itemTouchhelper.attachToRecyclerView(mRecyclerView);
+
+        mRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
+                mSwipeController.onDraw(c);
+            }
+        });
     }
-
     private void drawBondedDevices(){
         BluetoothManager bluetoothManager = (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
@@ -107,8 +132,9 @@ public class PairedFragment extends Fragment {
 
             for (BluetoothDevice device : devSet) {
                 Log.d(TAG, "add : " + device.getName());
-                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
-                        device.getAddress(), device));
+                for( int i = 0 ; i < 20; i++)
+                    mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                            device.getAddress(), device));
 
             }
         } else {
