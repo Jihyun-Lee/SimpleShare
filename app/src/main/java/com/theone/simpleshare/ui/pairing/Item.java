@@ -1,4 +1,4 @@
-package com.theone.simpleshare.ui.home;
+package com.theone.simpleshare.ui.pairing;
 
 import android.bluetooth.BluetoothDevice;
 

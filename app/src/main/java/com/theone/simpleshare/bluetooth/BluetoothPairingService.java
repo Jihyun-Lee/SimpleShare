@@ -1,5 +1,10 @@
 package com.theone.simpleshare.bluetooth;
 
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTING;
+
 import android.app.Service;
 import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
@@ -66,7 +71,7 @@ public class BluetoothPairingService extends Service {
 
     public static final String WRITE_VALUE = "CLIENT_TEST";
     private static final String NOTIFY_VALUE = "NOTIFY_TEST";
-    private int mBleState = BluetoothProfile.STATE_DISCONNECTED;
+    private int mBleState = STATE_DISCONNECTED;
     private static final int EXECUTION_DELAY = 1500;
 
     // current test category
@@ -120,10 +125,26 @@ public class BluetoothPairingService extends Service {
                         if (mA2dpProfile == null) {
                             break;
                         }
-                        Log.d(TAG, "call connect");
-                        connect();
+                        Log.d(TAG, "try to connect");
+                        connect(mDevice);
+
+                        mHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                if ( STATE_CONNECTED == mA2dpProfile.getConnectionState(mDevice) ){
+                                    Log.d(TAG, mDevice.getName() + " connected");
+                                    Toast.makeText(BluetoothPairingService.this,mDevice.getName() + " connected", Toast.LENGTH_SHORT).show();
+                                    //todo : display battery and state in rv
+
+                                } else {
+                                    Log.d(TAG, mDevice.getName() + " not connected");
+                                    notifyError(mDevice.getName() + " not connected");
+                                }
+                            }
+                        }, 2000);
 
                         break;
+
                     default:
                         break;
                 }
@@ -131,12 +152,12 @@ public class BluetoothPairingService extends Service {
         };
     }
 
-    private void connect() {
+    private void connect(BluetoothDevice device) {
         Log.d(TAG,"connect");
         try{
 
             Method connect = Class.forName("android.bluetooth.BluetoothA2dp").getMethod("connect", BluetoothDevice.class);
-            connect.invoke(mA2dpProfile, mDevice);
+            connect.invoke(mA2dpProfile, device);
 
         }catch(Exception e){
             Log.d(TAG, e.toString());
@@ -177,6 +198,10 @@ public class BluetoothPairingService extends Service {
         if (mCurrentAction != null) {
             switch (mCurrentAction) {
                 case BLUETOOTH_ACTION_START_SCAN:
+
+                    if ( mBluetoothAdapter.isDiscovering()){
+                        stopDiscovery();
+                    }
                     startDiscovery();
                     break;
 
@@ -184,6 +209,7 @@ public class BluetoothPairingService extends Service {
 
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     stopDiscovery();
+
 
                     if (device != null) {
                         String name = device.getName();
@@ -193,8 +219,9 @@ public class BluetoothPairingService extends Service {
                             if (!device.createBond()) {
                                 notifyError("Failed to call create bond");
                             }
+                        } else {
+                            notifyError(device.getName() + " is already paired");
                         }
-
 
                     } else {
                         Log.e(TAG, "ERROR : device is null");
@@ -298,7 +325,7 @@ public class BluetoothPairingService extends Service {
 
     private void startLeDiscovery() {
         // Start Service Discovery
-        if (mBluetoothGatt != null && mBleState == BluetoothProfile.STATE_CONNECTED) {
+        if (mBluetoothGatt != null && mBleState == STATE_CONNECTED) {
             mBluetoothGatt.discoverServices();
         } else {
             showMessage("Bluetooth LE GATT not connected.");
@@ -361,7 +388,7 @@ public class BluetoothPairingService extends Service {
                 Log.d(TAG, "onConnectionStateChange: status=" + status + ", newState=" + newState);
             }
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                if (newState == STATE_CONNECTED) {
                     mBleState = newState;
                     int bondState = gatt.getDevice().getBondState();
                     boolean bonded = false;
@@ -390,7 +417,7 @@ public class BluetoothPairingService extends Service {
                     } else {
                         notifyConnected();
                     }
-                } else if (status == BluetoothProfile.STATE_DISCONNECTED) {
+                } else if (status == STATE_DISCONNECTED) {
                     mBleState = newState;
                     mSecure = false;
                     mBluetoothGatt.close();
@@ -748,5 +775,21 @@ public class BluetoothPairingService extends Service {
                     //mTarget.fetchUuidsWithSdp();
                 }
             };
+
+    static String getConnectionStateName(int connectionState) {
+        switch (connectionState) {
+            case STATE_DISCONNECTED:
+                return "STATE_DISCONNECTED";
+            case STATE_CONNECTING:
+                return "STATE_CONNECTING";
+            case STATE_CONNECTED:
+                return "STATE_CONNECTED";
+            case STATE_DISCONNECTING:
+                return "STATE_DISCONNECTING";
+            default:
+                return "STATE_UNKNOWN";
+        }
+    }
+
 
 }

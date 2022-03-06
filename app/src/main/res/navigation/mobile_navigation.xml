@@ -3,23 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@+id/navigation_pairing">
 
     <fragment
-        android:id="@+id/navigation_home"
-        android:name="com.theone.simpleshare.ui.home.HomeFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
+        android:id="@+id/navigation_pairing"
+        android:name="com.theone.simpleshare.ui.pairing.PairingFragment"
+        android:label="@string/title_pairing"
+        tools:layout="@layout/fragment_pairing" />
+    <fragment
+        android:id="@+id/navigation_paired"
+        android:name="com.theone.simpleshare.ui.paired.PairedFragment"
+        android:label="@string/title_paired_list"
+        tools:layout="@layout/fragment_paired" />
+    <fragment
+        android:id="@+id/navigation_coc_server"
+        android:name="com.theone.simpleshare.ui.cocserver.CocServerFragment"
+        android:label="@string/title_coc_server"
+        tools:layout="@layout/fragment_coc_server" />
 
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="com.theone.simpleshare.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
-
-    <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="com.theone.simpleshare.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/navigation_coc_client"
+        android:name="com.theone.simpleshare.ui.cocclient.CocClientFragment"
+        android:label="@string/title_coc_client"
+        tools:layout="@layout/fragment_coc_client" />
 </navigation>

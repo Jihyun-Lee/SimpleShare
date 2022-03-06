@@ -1,4 +1,4 @@
-package com.theone.simpleshare.ui.home;
+package com.theone.simpleshare.ui.pairing;
 
 
 
@@ -11,34 +11,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.theone.simpleshare.R;
-import com.theone.simpleshare.bluetooth.BleCocClientService;
 import com.theone.simpleshare.bluetooth.BluetoothPairingService;
-import com.theone.simpleshare.databinding.FragmentHomeBinding;
+import com.theone.simpleshare.databinding.FragmentPairingBinding;
 
 import java.util.ArrayList;
 
-public class HomeFragment extends Fragment {
+public class PairingFragment extends Fragment {
 
-    private HomeViewModel homeViewModel;
-    private FragmentHomeBinding binding;
+    private PairingViewModel pairingViewModel;
+    private FragmentPairingBinding binding;
     private final static String TAG = "HomeFragment";
 
     private Context mContext;
@@ -52,10 +46,10 @@ public class HomeFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        homeViewModel =
-                new ViewModelProvider(this).get(HomeViewModel.class);
+        pairingViewModel =
+                new ViewModelProvider(this).get(PairingViewModel.class);
 
-        binding = FragmentHomeBinding.inflate(inflater, container, false);
+        binding = FragmentPairingBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         mContext = getActivity();
 

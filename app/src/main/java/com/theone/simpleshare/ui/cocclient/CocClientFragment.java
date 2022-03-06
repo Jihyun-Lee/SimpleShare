@@ -1,7 +1,5 @@
-package com.theone.simpleshare.ui.notifications;
+package com.theone.simpleshare.ui.cocclient;
 
-import android.bluetooth.BluetoothClass;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,31 +17,24 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.theone.simpleshare.R;
 import com.theone.simpleshare.bluetooth.BleCocClientService;
-import com.theone.simpleshare.databinding.FragmentHomeBinding;
-import com.theone.simpleshare.databinding.FragmentNotificationsBinding;
-import com.theone.simpleshare.ui.home.HomeViewModel;
-import com.theone.simpleshare.ui.home.Item;
-import com.theone.simpleshare.ui.home.RecyclerAdapter;
+import com.theone.simpleshare.databinding.FragmentCocClientBinding;
 
-import java.util.ArrayList;
 
-public class NotificationsFragment extends Fragment {
+public class CocClientFragment extends Fragment {
 
-    private NotificationsViewModel notificationsViewModel;
-    private FragmentNotificationsBinding binding;
+    private CocClientViewModel notificationsViewModel;
+    private FragmentCocClientBinding binding;
     private final static String TAG = "NotificationsFragment";
     private Context mContext;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         notificationsViewModel =
-                new ViewModelProvider(this).get(NotificationsViewModel.class);
+                new ViewModelProvider(this).get(CocClientViewModel.class);
 
-        binding = FragmentNotificationsBinding.inflate(inflater, container, false);
+        binding = FragmentCocClientBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         final TextView textView = binding.textNotifications;

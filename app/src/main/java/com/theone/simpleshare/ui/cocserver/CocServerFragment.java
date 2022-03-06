@@ -1,4 +1,4 @@
-package com.theone.simpleshare.ui.dashboard;
+package com.theone.simpleshare.ui.cocserver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,27 +18,26 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.theone.simpleshare.R;
-import com.theone.simpleshare.bluetooth.BleCocClientService;
 import com.theone.simpleshare.bluetooth.BleCocServerService;
-import com.theone.simpleshare.databinding.FragmentDashboardBinding;
+import com.theone.simpleshare.databinding.FragmentCocServerBinding;
 
-public class DashboardFragment extends Fragment {
+
+public class CocServerFragment extends Fragment {
 
     private static final boolean DEBUG = true;
-    private DashboardViewModel dashboardViewModel;
-    private FragmentDashboardBinding binding;
+    private CocServerViewModel cocServerViewModel;
+    private FragmentCocServerBinding binding;
     private final static String TAG = "DashboardFragment";
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        dashboardViewModel =
-                new ViewModelProvider(this).get(DashboardViewModel.class);
+        cocServerViewModel =
+                new ViewModelProvider(this).get(CocServerViewModel.class);
 
-        binding = FragmentDashboardBinding.inflate(inflater, container, false);
+        binding = FragmentCocServerBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         final TextView textView = binding.textDashboard;
-        dashboardViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        cocServerViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);

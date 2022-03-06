@@ -3,9 +3,14 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/github/SimpleShare/app/src/main/res/drawable/ic_notifications_black_24dp.xml" value="0.33489583333333334" />
         <entry key="..\:/github/SimpleShare/app/src/main/res/layout/activity_main.xml" value="0.12916666666666668" />
-        <entry key="..\:/github/SimpleShare/app/src/main/res/layout/fragment_home.xml" value="0.2957427536231884" />
+        <entry key="..\:/github/SimpleShare/app/src/main/res/layout/fragment_coc_client.xml" value="0.2558876811594203" />
+        <entry key="..\:/github/SimpleShare/app/src/main/res/layout/fragment_home.xml" value="0.2" />
+        <entry key="..\:/github/SimpleShare/app/src/main/res/layout/fragment_paired.xml" value="0.2558876811594203" />
+        <entry key="..\:/github/SimpleShare/app/src/main/res/layout/fragment_pairing.xml" value="0.2520833333333333" />
         <entry key="..\:/github/SimpleShare/app/src/main/res/layout/item_recyclerview.xml" value="0.19114583333333332" />
+        <entry key="..\:/github/SimpleShare/app/src/main/res/menu/bottom_nav_menu.xml" value="0.3145833333333333" />
         <entry key="..\:/github/app/src/main/res/drawable/ic_dashboard_black_24dp.xml" value="0.33958333333333335" />
         <entry key="..\:/github/app/src/main/res/drawable/ic_launcher_background.xml" value="0.33958333333333335" />
         <entry key="..\:/github/app/src/main/res/drawable/ic_notifications_black_24dp.xml" value="0.33958333333333335" />
