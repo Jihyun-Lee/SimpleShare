@@ -35,7 +35,8 @@ public class MainActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_pairing, R.id.navigation_coc_server, R.id.navigation_coc_client)
+                //R.id.navigation_pairing, R.id.navigation_paired, R.id.navigation_coc_server, R.id.navigation_coc_client)
+                R.id.navigation_pairing, R.id.navigation_paired)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        getSupportActionBar().hide();
+       // getSupportActionBar().hide();
     }
 
     @Override

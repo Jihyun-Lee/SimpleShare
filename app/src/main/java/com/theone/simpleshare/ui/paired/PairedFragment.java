@@ -142,6 +142,7 @@ public class PairedFragment extends Fragment {
 
             }
         } else {
+            //add dummy item
             mItemList.add(new Item(R.drawable.ic_launcher_foreground, "empty",
                     "empty", null));
         }
