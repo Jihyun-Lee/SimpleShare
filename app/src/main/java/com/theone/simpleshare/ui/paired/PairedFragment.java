@@ -42,7 +42,7 @@ public class PairedFragment extends Fragment {
 
     private Context mContext;
     private RecyclerView mRecyclerView;
-    private ArrayList<Item> mItemList;
+    //private ArrayList<Item> mItemList;
     private RecyclerAdapter mRecyclerAdapter;
     private SwipeController mSwipeController;
 
@@ -60,7 +60,19 @@ public class PairedFragment extends Fragment {
         pairedViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
+                //ui
                 //textView.setText(s);
+
+            }
+        });
+
+        pairedViewModel.getList().observe(getViewLifecycleOwner(), new Observer<ArrayList<Item>>() {
+            @Override
+            public void onChanged(ArrayList<Item> items) {
+                //ui
+                Log.d(TAG, "onChanged");
+                mRecyclerAdapter.notifyDataSetChanged();
+
             }
         });
 
@@ -89,8 +101,10 @@ public class PairedFragment extends Fragment {
             }
         });
 
-        mItemList = new ArrayList<>();
-        mRecyclerAdapter.setItemList(mItemList);
+        //mItemList = new ArrayList<>();
+        //mRecyclerAdapter.setItemList(mItemList);
+        mRecyclerAdapter.setItemList(pairedViewModel.getList().getValue());
+
 
 
 
@@ -142,17 +156,22 @@ public class PairedFragment extends Fragment {
             for (BluetoothDevice device : devSet) {
                 Log.d(TAG, "add : " + device.getName());
 
-                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
                         device.getAddress(), device));
+                //mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+//                        device.getAddress(), device));
 
             }
         } else {
             //add dummy item
-            mItemList.add(new Item(R.drawable.ic_launcher_foreground, "empty",
-                    "empty", null));
+            pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, "empty",
+                          "empty", null));
+
+            //mItemList.add(new Item(R.drawable.ic_launcher_foreground, "empty",
+              //      "empty", null));
         }
 
-        mRecyclerAdapter.notifyDataSetChanged();
+        //mRecyclerAdapter.notifyDataSetChanged();
     }
 
     private final BroadcastReceiver mBroadcast = new BroadcastReceiver() {
