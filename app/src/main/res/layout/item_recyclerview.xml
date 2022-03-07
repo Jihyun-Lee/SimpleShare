@@ -3,6 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="10dp"
+        android:background="#aaa"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,22 +23,41 @@
 
         <TextView
             android:id="@+id/name"
-            android:layout_width="wrap_content"
+            android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:layout_marginLeft="20dp"
-            android:text="이름"
+            android:text="name"
             android:textSize="16sp"
             android:textColor="#000"/>
 
         <TextView
-            android:id="@+id/message"
+            android:id="@+id/address"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="100dp"
-            android:text="상태메시지"
+            android:layout_marginLeft="10dp"
+            android:text="address"
             android:textSize="12sp"
             android:textColor="#444"
             android:maxLines="1"/>
+        <TextView
+            android:id="@+id/state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:text="state"
+            android:textSize="12sp"
+            android:textColor="#444"
+            android:maxLines="1"/>
+        <TextView
+            android:id="@+id/battery_level"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="30dp"
+            android:text="battery level"
+            android:textSize="12sp"
+            android:textColor="#444"
+            android:maxLines="1"/>
+
     </LinearLayout>
 
     <View

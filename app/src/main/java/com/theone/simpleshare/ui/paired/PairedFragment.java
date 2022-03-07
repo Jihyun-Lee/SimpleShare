@@ -42,7 +42,6 @@ public class PairedFragment extends Fragment {
 
     private Context mContext;
     private RecyclerView mRecyclerView;
-    //private ArrayList<Item> mItemList;
     private RecyclerAdapter mRecyclerAdapter;
     private SwipeController mSwipeController;
 
@@ -149,17 +148,10 @@ public class PairedFragment extends Fragment {
         /*refresh rv*/
         mRecyclerAdapter.clear();
         Set<BluetoothDevice> devSet =  bluetoothAdapter.getBondedDevices();
-        Log.d(TAG, "dev set size : " + devSet.size());
-
         if( devSet.size() != 0) {
-
             for (BluetoothDevice device : devSet) {
-                Log.d(TAG, "add : " + device.getName());
-
                 pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
                         device.getAddress(), device));
-                //mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
-//                        device.getAddress(), device));
 
             }
         } else {
@@ -167,11 +159,8 @@ public class PairedFragment extends Fragment {
             pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, "empty",
                           "empty", null));
 
-            //mItemList.add(new Item(R.drawable.ic_launcher_foreground, "empty",
-              //      "empty", null));
         }
-
-        //mRecyclerAdapter.notifyDataSetChanged();
+        mRecyclerAdapter.notifyDataSetChanged();
     }
 
     private final BroadcastReceiver mBroadcast = new BroadcastReceiver() {
@@ -199,7 +188,7 @@ public class PairedFragment extends Fragment {
 
     private void registerReceiver(){
         IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        //filter.addAction(BluetoothDevice.ACTION_FOUND);
         mContext.registerReceiver(mBroadcast, filter);
     }
 

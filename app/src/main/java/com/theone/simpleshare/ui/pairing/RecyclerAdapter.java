@@ -61,7 +61,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
             profile = itemView.findViewById(R.id.profile);
             name = itemView.findViewById(R.id.name);
-            message = itemView.findViewById(R.id.message);
+            message = itemView.findViewById(R.id.address);
 
             itemView.setOnClickListener( new View.OnClickListener(){
                 @Override

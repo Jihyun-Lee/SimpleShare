@@ -17,6 +17,7 @@ import java.util.ArrayList;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
 
+
     private ArrayList<Item> mItemList;
     Context mContext;
     @NonNull
@@ -65,15 +66,15 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
     class ViewHolder extends RecyclerView.ViewHolder {
         ImageView profile;
-        TextView name;
-        TextView message;
-
+        TextView name, address, state, batteryLevel;
         public ViewHolder(@NonNull View itemView){
             super(itemView);
 
             profile = itemView.findViewById(R.id.profile);
             name = itemView.findViewById(R.id.name);
-            message = itemView.findViewById(R.id.message);
+            address = itemView.findViewById(R.id.address);
+            state = itemView.findViewById(R.id.state);
+            batteryLevel = itemView.findViewById(R.id.battery_level);
 
             itemView.setOnClickListener( new View.OnClickListener(){
                 @Override
@@ -90,7 +91,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         void onBind(Item item){
             profile.setImageResource(item.getResourceId());
             name.setText(item.getName());
-            message.setText(item.getMessage());
+            address.setText(item.getMessage());
+
         }
 
     }

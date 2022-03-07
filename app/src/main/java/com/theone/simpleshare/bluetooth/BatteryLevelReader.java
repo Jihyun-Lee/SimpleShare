@@ -120,14 +120,9 @@ public class BatteryLevelReader extends Service {
     public void onCreate() {
         super.onCreate();
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        registerReceiver(mBondStatusReceiver, filter);
-
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mScanner = mBluetoothAdapter.getBluetoothLeScanner();
-
 
         mTaskQueue = new TestTaskQueue(getClass().getName() + "_taskHandlerThread");
 
@@ -213,8 +208,6 @@ public class BatteryLevelReader extends Service {
             mBluetoothGatt = null;
         }
 
-        unregisterReceiver(mBondStatusReceiver);
-        Log.d(TAG, "BluetoothPairingService onDestroy");
         mTaskQueue.quit();
 
     }
@@ -415,95 +408,6 @@ public class BatteryLevelReader extends Service {
         }
     };
 
-    private final BroadcastReceiver mBondStatusReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE,
-                        BluetoothDevice.BOND_NONE);
-                switch (state) {
-                    case BluetoothDevice.BOND_BONDED:
-                        if (mBluetoothGatt == null) {
-                            if (DEBUG) {
-                                Log.d(TAG, "onReceive:BOND_BONDED: calling connectGatt. device="
-                                        + device + ", mSecure=" + mSecure);
-                            }
-
-                            //BD/EDR(A2DP) or BLE device.
-                            mDevice = device;
-
-                            if( !mBluetoothAdapter.getProfileProxy(getApplicationContext(), mServiceConnection, BluetoothProfile.A2DP)) {
-                                Log.d(TAG, "A2DP getProfileProxy failed");
-                                mA2dpProfile = null;
-                                break;
-                            }
-                            // regardless of the UUID content, at this point, we're sure we can initiate a
-                            // profile connection.
-                            Log.d(TAG, "send MSG_CONNECT message");
-                            mHandler.sendEmptyMessageDelayed(MSG_CONNECT_TIMEOUT, CONNECT_TIMEOUT_MS);
-                            if (!mHandler.hasMessages(MSG_CONNECT)) {
-                                mHandler.sendEmptyMessageDelayed(MSG_CONNECT, CONNECT_DELAY);
-                            }
-                        }
-                        break;
-                    case BluetoothDevice.BOND_NONE:
-                        notifyError("Failed to create bond");
-                        break;
-                    case BluetoothDevice.BOND_BONDING:
-                        // fall through
-                    default:
-                        // wait for next state
-                        break;
-                }
-            }
-        }
-    };
-
-    private BluetoothA2dp mA2dpProfile;
-    private final BluetoothProfile.ServiceListener mServiceConnection =
-            new BluetoothProfile.ServiceListener() {
-
-                @Override
-                public void onServiceDisconnected(int profile) {
-                    Log.w(TAG, "Service disconnected, perhaps unexpectedly");
-                    //unregisterConnectionStateReceiver();
-                    //closeA2dpProfileProxy();
-                    //failed();
-                }
-
-                @Override
-                public void onServiceConnected(int profile, BluetoothProfile proxy) {
-                    if (DEBUG) {
-                        Log.d(TAG, "Connection made to bluetooth proxy." );
-                    }
-                    mA2dpProfile = (BluetoothA2dp) proxy;
-                    if (DEBUG) {
-                        Log.d(TAG, "Connecting to target: " + mDevice.getAddress() + " name : "+mDevice.getName());
-                    }
-
-                    //registerConnectionStateReceiver();
-                    // We initiate SDP because connecting to A2DP before services are discovered leads to
-                    // error.
-                    //mTarget.fetchUuidsWithSdp();
-                }
-            };
-
-    static String getConnectionStateName(int connectionState) {
-        switch (connectionState) {
-            case STATE_DISCONNECTED:
-                return "STATE_DISCONNECTED";
-            case STATE_CONNECTING:
-                return "STATE_CONNECTING";
-            case STATE_CONNECTED:
-                return "STATE_CONNECTED";
-            case STATE_DISCONNECTING:
-                return "STATE_DISCONNECTING";
-            default:
-                return "STATE_UNKNOWN";
-        }
-    }
     private class GattBatteryCallbacks extends BluetoothGattCallback {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
