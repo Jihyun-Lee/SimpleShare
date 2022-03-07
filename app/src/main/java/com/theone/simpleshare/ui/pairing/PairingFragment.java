@@ -21,7 +21,9 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,7 +42,7 @@ public class PairingFragment extends Fragment {
 
     private Context mContext;
     private RecyclerView mRecyclerView;
-    private ArrayList<Item> mItemList;
+
     private RecyclerAdapter mRecyclerAdapter;
 
     private enum ParingMode {AUTO_PAIRING_MODE, MANUAL_PAIRING_MODE}
@@ -58,14 +60,14 @@ public class PairingFragment extends Fragment {
         View root = binding.getRoot();
         mContext = getActivity();
 
-        /*final TextView textView = binding.textHome;
-        homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                textView.setText(s);
-            }
-        });*/
 
+
+        pairingViewModel.getList().observe(getViewLifecycleOwner(), new Observer<ArrayList<Item>>() {
+            @Override
+            public void onChanged(ArrayList<Item> items) {
+                Log.d(TAG, "onChanged");
+            }
+        });
         mRecyclerAdapter = new RecyclerAdapter();
         mRecyclerView = binding.recyclerView;
         mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
@@ -87,9 +89,7 @@ public class PairingFragment extends Fragment {
             }
         });
 
-        mItemList = new ArrayList<>();
-
-        mRecyclerAdapter.setItemList(mItemList);
+        mRecyclerAdapter.setItemList(pairingViewModel.getList().getValue());
         binding.manualPairing.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
@@ -138,7 +138,7 @@ public class PairingFragment extends Fragment {
         mRecyclerAdapter.clear();
 
         for(BluetoothDevice device :bluetoothAdapter.getBondedDevices()){
-            mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+            pairingViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
                     device.getAddress(), device));
 
         }
@@ -161,9 +161,9 @@ public class PairingFragment extends Fragment {
                         /*Deal with HID and A2DP device*/
                         if ( isA2dpDevice(device)|| isInputDevice(device) ) {
                             Log.d(TAG, "device : " + device.getName());
-                            mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                            pairingViewModel.getList().getValue().add( new Item(R.drawable.ic_launcher_foreground, device.getName(),
                                     device.getAddress(), device));
-                            mRecyclerAdapter.notifyItemInserted(mItemList.size());
+                            mRecyclerAdapter.notifyItemInserted(pairingViewModel.getList().getValue().size());
 
                             if(mPairingMode == ParingMode.AUTO_PAIRING_MODE){
                                 Toast.makeText(mContext, "AUTO PAIR :" +device.getName(),Toast.LENGTH_LONG).show();
@@ -177,9 +177,9 @@ public class PairingFragment extends Fragment {
                             }
                         } else {
                             if( device.getName() != null) {
-                                mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
+                                pairingViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
                                         device.getAddress(), device));
-                                mRecyclerAdapter.notifyItemInserted(mItemList.size());
+                                mRecyclerAdapter.notifyItemInserted(pairingViewModel.getList().getValue().size());
                             } else {
                                 Log.w(TAG, "empty device name");
                             }
