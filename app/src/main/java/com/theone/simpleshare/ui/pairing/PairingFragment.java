@@ -2,6 +2,9 @@ package com.theone.simpleshare.ui.pairing;
 
 
 
+import static com.theone.simpleshare.bluetooth.BluetoothUtils.isA2dpDevice;
+import static com.theone.simpleshare.bluetooth.BluetoothUtils.isInputDevice;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
@@ -43,6 +46,8 @@ public class PairingFragment extends Fragment {
     private enum ParingMode {AUTO_PAIRING_MODE, MANUAL_PAIRING_MODE}
 
     private ParingMode mPairingMode = ParingMode.MANUAL_PAIRING_MODE;
+
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -153,16 +158,9 @@ public class PairingFragment extends Fragment {
                 case BluetoothDevice.ACTION_FOUND :
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     if (device != null) {
-                        int devClass = device.getBluetoothClass().getDeviceClass();
-
-                        /*Deal with A2DP device*/
-                        if ( devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO ||
-                                devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) {
-                            Log.d(TAG, "AUDIO_VIDEO device : " + device.getName());
-
+                        /*Deal with HID and A2DP device*/
+                        if ( isA2dpDevice(device)|| isInputDevice(device) ) {
+                            Log.d(TAG, "device : " + device.getName());
                             mItemList.add( new Item(R.drawable.ic_launcher_foreground, device.getName(),
                                     device.getAddress(), device));
                             mRecyclerAdapter.notifyItemInserted(mItemList.size());
@@ -177,8 +175,7 @@ public class PairingFragment extends Fragment {
 
                                 mContext.startService(i);
                             }
-
-                        } else { /*Others : just display on screen Todo : HID devices such as keyboard, game pad*/
+                        } else {
                             if( device.getName() != null) {
                                 mItemList.add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
                                         device.getAddress(), device));

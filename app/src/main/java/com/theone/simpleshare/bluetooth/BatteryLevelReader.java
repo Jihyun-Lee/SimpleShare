@@ -1,13 +1,10 @@
 package com.theone.simpleshare.bluetooth;
 
+
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTING;
-
-import static com.theone.simpleshare.bluetooth.BluetoothUtils.HID_HOST;
-import static com.theone.simpleshare.bluetooth.BluetoothUtils.isA2dpDevice;
-import static com.theone.simpleshare.bluetooth.BluetoothUtils.isInputDevice;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
@@ -31,7 +28,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.input.InputManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -43,13 +39,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class BluetoothPairingService extends Service {
-    private final static String TAG = "BluetoothPairingService";
+public class BatteryLevelReader extends Service {
+    private final static String TAG = "BatteryLevelReader";
     public static final boolean DEBUG = true;
     private static final int MSG_CONNECT_TIMEOUT = 1;
     private static final int MSG_CONNECT = 2;
@@ -66,6 +62,9 @@ public class BluetoothPairingService extends Service {
     public static final String BLUETOOTH_ACTION_REMOVE_BOND =
             "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_REMOVE_BOND";
 
+    public static final String BLUETOOTH_ACTION_READ_BATTERY_LEVEL =
+            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_READ_BATTERY_LEVEL";
+
     private static final UUID SERVICE_UUID =
             UUID.fromString("00009999-0000-1000-8000-00805f9b34fb");
 
@@ -75,10 +74,23 @@ public class BluetoothPairingService extends Service {
     public static final UUID LE_PSM_CHARACTERISTIC_UUID =
             UUID.fromString("2d410339-82b6-42aa-b34e-e2e01df8cc1a");
 
+
+
     public static final String WRITE_VALUE = "CLIENT_TEST";
     private static final String NOTIFY_VALUE = "NOTIFY_TEST";
     private int mBleState = STATE_DISCONNECTED;
     private static final int EXECUTION_DELAY = 1500;
+
+
+    private static final UUID GATT_BATTERY_SERVICE_UUID =
+            UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
+    private static final UUID GATT_BATTERY_LEVEL_CHARACTERISTIC_UUID =
+            UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
+
+
+
+
+
 
     // current test category
     private String mCurrentAction;
@@ -102,6 +114,7 @@ public class BluetoothPairingService extends Service {
 
     // Handler for communicating task with peer.
     private TestTaskQueue mTaskQueue;
+    private BluetoothGatt mDeviceGatt;
 
     @Override
     public void onCreate() {
@@ -124,73 +137,14 @@ public class BluetoothPairingService extends Service {
             public void handleMessage(Message m) {
                 switch (m.what) {
                     case MSG_CONNECT_TIMEOUT:
-                        //failed();
                         break;
                     case MSG_CONNECT:
-
-                        if (mA2dpProfile == null) {
-                            break;
-                        }
-                        Log.d(TAG, "try to connect");
-                        a2dpConnect(mDevice);
-
-                        mHandler.postDelayed(new Runnable() {
-                            @SuppressLint("MissingPermission")
-                            @Override
-                            public void run() {
-                                if ( STATE_CONNECTED == mA2dpProfile.getConnectionState(mDevice) ){
-                                    Log.d(TAG, mDevice.getName() + " connected");
-                                    Toast.makeText(BluetoothPairingService.this,mDevice.getName() + " connected", Toast.LENGTH_SHORT).show();
-                                    //todo : display battery and state in rv
-
-                                } else {
-                                    Log.d(TAG, mDevice.getName() + " not connected");
-                                    notifyError(mDevice.getName() + " not connected");
-                                }
-                            }
-                        }, 2000);
-
                         break;
-
                     default:
                         break;
                 }
             }
         };
-    }
-
-    private void a2dpConnect(BluetoothDevice device) {
-        Log.d(TAG,"connect");
-        try{
-
-            Method connect = Class.forName("android.bluetooth.BluetoothA2dp").getMethod("connect", BluetoothDevice.class);
-            connect.invoke(mA2dpProfile, device);
-
-        }catch(Exception e){
-            Log.d(TAG, e.toString());
-        }
-    }
-    /*
-    private void hidHostConnect(BluetoothDevice device) {
-        Log.d(TAG,"connect");
-        try{
-            Method connect = Class.forName("android.bluetooth.BluetoothHidHost").getMethod("connect", BluetoothDevice.class);
-            connect.invoke(mInputProxy, device);
-        }catch(Exception e){
-            Log.d(TAG, e.toString());
-        }
-    }
-    */
-    private void removeBond(BluetoothDevice device) {
-        Log.d(TAG,"removeBond");
-        try{
-
-            Method connect = Class.forName("android.bluetooth.BluetoothDevice").getMethod("removeBond");
-            connect.invoke(device);
-
-        }catch(Exception e){
-            Log.d(TAG, e.toString());
-        }
     }
 
     @Override
@@ -214,45 +168,28 @@ public class BluetoothPairingService extends Service {
         Log.d(TAG, "onTestFinish action : " + mCurrentAction);
         if (mCurrentAction != null) {
             switch (mCurrentAction) {
-                case BLUETOOTH_ACTION_START_SCAN:
-
-                    if ( mBluetoothAdapter.isDiscovering()){
-                        Log.d(TAG, "stop scan");
-                        stopDiscovery();
-                    }
-                    startDiscovery();
-                    break;
-
-                case BLUETOOTH_ACTION_START_PAIRING: {
+                case BLUETOOTH_ACTION_READ_BATTERY_LEVEL: {
 
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    stopDiscovery();
+                    mDevice = device;
 
+                    if (mDevice != null &&
+                            (mDevice.getType() == BluetoothDevice.DEVICE_TYPE_LE ||
+                                    mDevice.getType() == BluetoothDevice.DEVICE_TYPE_DUAL)) {
+                        // Only LE devices support GATT
+                        // Todo : need autoConnect???
+                        Log.d(TAG, "try connectGatt on "+mDevice.getName());
+                        mDeviceGatt = mDevice.connectGatt( BatteryLevelReader.this, true, new GattBatteryCallbacks());
+                    } else {
 
-                    if (device != null) {
-
-                        String name = device.getName();
-                        String address = device.getAddress();
-                        Log.d(TAG, "name : " + name + " address : " + address);
-                        if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-                            if (!device.createBond()) {
-                                notifyError("Failed to call create bond");
-                            }
+                        if (mDevice.getType() == BluetoothDevice.DEVICE_TYPE_CLASSIC){
+                            Log.e(TAG, "DEVICE_TYPE_CLASSIC device..");
                         } else {
-                            notifyError(device.getName() + " is already paired");
+                            Log.e(TAG, "~~~~~~~~error");
+                            Log.e(TAG, "mDevice.getName() : "+ mDevice.getName());
+                            Log.e(TAG, "mDevice.getType() : "+ mDevice.getType());
                         }
 
-                    } else {
-                        Log.e(TAG, "ERROR : device is null");
-                        notifyError("Failed to get device from discovery");
-                    }
-
-                }
-                    break;
-                case BLUETOOTH_ACTION_REMOVE_BOND: {
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (device != null) {
-                        removeBond(device);
                     }
                 }
                     break;
@@ -275,7 +212,7 @@ public class BluetoothPairingService extends Service {
             mBluetoothGatt.close();
             mBluetoothGatt = null;
         }
-        stopDiscovery();
+
         unregisterReceiver(mBondStatusReceiver);
         Log.d(TAG, "BluetoothPairingService onDestroy");
         mTaskQueue.quit();
@@ -283,23 +220,10 @@ public class BluetoothPairingService extends Service {
     }
 
     public static BluetoothGatt connectGatt(BluetoothDevice device, Context context,
-                                            boolean autoConnect, boolean isSecure,
-                                            BluetoothGattCallback callback) {
+                                            boolean autoConnect, BluetoothGattCallback callback) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (isSecure) {
-                if (TRANSPORT_MODE_FOR_SECURE_CONNECTION == BluetoothDevice.TRANSPORT_AUTO) {
-                    Toast.makeText(context, "connectGatt(transport=AUTO)", Toast.LENGTH_SHORT)
-                            .show();
-                } else {
-                    Toast.makeText(context, "connectGatt(transport=LE)", Toast.LENGTH_SHORT).show();
-                }
-                return device.connectGatt(context, autoConnect, callback,
-                        TRANSPORT_MODE_FOR_SECURE_CONNECTION);
-            } else {
-                Toast.makeText(context, "connectGatt(transport=LE)", Toast.LENGTH_SHORT).show();
-                return device.connectGatt(context, autoConnect, callback,
-                        BluetoothDevice.TRANSPORT_LE);
-            }
+            Toast.makeText(context, "connectGatt(transport=LE)", Toast.LENGTH_SHORT).show();
+            return device.connectGatt(context, autoConnect, callback, BluetoothDevice.TRANSPORT_LE);
         } else {
             Toast.makeText(context, "connectGatt", Toast.LENGTH_SHORT).show();
             return device.connectGatt(context, autoConnect, callback);
@@ -317,13 +241,13 @@ public class BluetoothPairingService extends Service {
         showMessage(message);
         Log.e(TAG, message);
 
-       // Intent intent = new Intent(BLE_CLIENT_ERROR);
-       // sendBroadcast(intent);
+        // Intent intent = new Intent(BLE_CLIENT_ERROR);
+        // sendBroadcast(intent);
     }
 
     private void notifyMismatchSecure() {
-       // Intent intent = new Intent(BLE_BLUETOOTH_MISMATCH_SECURE);
-       // sendBroadcast(intent);
+        // Intent intent = new Intent(BLE_BLUETOOTH_MISMATCH_SECURE);
+        // sendBroadcast(intent);
     }
 
     private void notifyMismatchInsecure() {
@@ -395,7 +319,7 @@ public class BluetoothPairingService extends Service {
         mHandler.post(new Runnable() {
             public void run() {
                 Log.d(TAG, msg);
-                Toast.makeText(BluetoothPairingService.this, msg, Toast.LENGTH_SHORT).show();
+                //show toast
             }
         });
     }
@@ -491,202 +415,6 @@ public class BluetoothPairingService extends Service {
         }
     };
 
-    private final ScanCallback mScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            Log.d(TAG, "onScanResult");
-            if (mBluetoothGatt == null) {
-                // verify the validity of the advertisement packet.
-                mValidityService = false;
-                List<ParcelUuid> uuids = result.getScanRecord().getServiceUuids();
-                for (ParcelUuid uuid : uuids) {
-                    if (uuid.getUuid().equals(BleCocServerService.ADV_COC_SERVICE_UUID)) {
-                        if (DEBUG) {
-                            Log.d(TAG, "onScanResult: Found ADV with LE CoC Service UUID.");
-                        }
-                        mValidityService = true;
-                        break;
-                    }
-                }
-                if (mValidityService) {
-                    //stopScan();
-                    stopDiscovery();
-
-                    BluetoothDevice device = result.getDevice();
-                    if (DEBUG) {
-                        Log.d(TAG, "onScanResult: Found ADV with CoC UUID on device="
-                                + device);
-                    }
-                    if (mSecure) {
-                        if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-                            if (!device.createBond()) {
-                                notifyError("Failed to call create bond");
-                            }
-                        } else {
-                            mDevice = device;
-                            mBluetoothGatt = connectGatt(result.getDevice(), BluetoothPairingService.this, false,
-                                    mSecure, mGattCallbacks);
-                        }
-                    } else {
-                        mDevice = device;
-                        mBluetoothGatt = connectGatt(result.getDevice(), BluetoothPairingService.this, false, mSecure,
-                                mGattCallbacks);
-                    }
-                } else {
-                    notifyError("No valid service in Advertisement");
-                }
-            }
-        }
-    };
-
-    private boolean checkReadBufContent(byte[] buf, int len) {
-        // Check that the content is correct
-        for (int i = 0; i < len; i++) {
-            if (buf[i] != mNextReadByte) {
-                Log.e(TAG, "handleMessageRead: Error: wrong byte content. buf["
-                        + i + "]=" + buf[i] + " not equal to " + mNextReadByte);
-                return false;
-            }
-            mNextReadByte++;
-        }
-        return true;
-    }
-
-    private void handleMessageRead(Message msg) {
-        byte[] buf = (byte[])msg.obj;
-        int len = msg.arg1;
-        if (len <= 0) {
-            return;
-        }
-        mTotalReadLen += len;
-        if (DEBUG) {
-            Log.d(TAG, "handleMessageRead: receive buffer of length=" + len + ", mTotalReadLen="
-                    + mTotalReadLen + ", mNextReadExpectedLen=" + mNextReadExpectedLen);
-        }
-
-        if (mNextReadExpectedLen == mTotalReadLen) {
-            if (!checkReadBufContent(buf, len)) {
-                mNextReadExpectedLen = -1;
-                return;
-            }
-            showMessage("Read " + len + " bytes");
-            if (DEBUG) {
-                Log.d(TAG, "handleMessageRead: broadcast intent " + mNextReadCompletionIntent);
-            }
-            Intent intent = new Intent(mNextReadCompletionIntent);
-            sendBroadcast(intent);
-            mNextReadExpectedLen = -1;
-            mNextReadCompletionIntent = null;
-            mTotalReadLen = 0;
-        } else if (mNextReadExpectedLen > mTotalReadLen) {
-            if (!checkReadBufContent(buf, len)) {
-                mNextReadExpectedLen = -1;
-                return;
-            }
-        } else if (mNextReadExpectedLen < mTotalReadLen) {
-            Log.e(TAG, "handleMessageRead: Unexpected receive buffer of length=" + len
-                    + ", expected len=" + mNextReadExpectedLen);
-        }
-    }
-
-    private void sendMessage(byte[] buf) {
-        mChatService.write(buf);
-    }
-
-    private void handleMessageWrite(Message msg) {
-        byte[] buffer = (byte[]) msg.obj;
-        int len = buffer.length;
-
-        showMessage("LE Coc Client wrote " + len + " bytes");
-        if (len == mNextWriteExpectedLen) {
-            if (mNextWriteCompletionIntent != null) {
-                Intent intent = new Intent(mNextWriteCompletionIntent);
-                sendBroadcast(intent);
-            }
-        } else {
-            Log.d(TAG, "handleMessageWrite: unrecognized length=" + len);
-        }
-    }
-
-    private class ChatHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            if (DEBUG) {
-                Log.d(TAG, "ChatHandler.handleMessage: msg=" + msg);
-            }
-            int state = msg.arg1;
-            switch (msg.what) {
-                case BluetoothChatService.MESSAGE_STATE_CHANGE:
-                    if (state == BluetoothChatService.STATE_CONNECTED) {
-                        // LE CoC is established
-                        notifyLeCocClientConnected();
-                    }
-                    break;
-                case BluetoothChatService.MESSAGE_READ:
-                    handleMessageRead(msg);
-                    break;
-                case BluetoothChatService.MESSAGE_WRITE:
-                    handleMessageWrite(msg);
-                    break;
-            }
-        }
-    }
-
-    private void notifyLeCocClientConnected() {
-        if (DEBUG) {
-            Log.d(TAG, "notifyLeCocClientConnected: device=" + mDevice + ", mSecure=" + mSecure);
-        }
-        showMessage("Bluetooth LE Coc connected");
-        //Intent intent = new Intent(BLE_COC_CONNECTED);
-        //sendBroadcast(intent);
-    }
-
-    private void leCocClientConnect() {
-        if (DEBUG) {
-            Log.d(TAG, "leCocClientConnect: device=" + mDevice + ", mSecure=" + mSecure);
-        }
-        if (mDevice == null) {
-            Log.e(TAG, "leCocClientConnect: mDevice is null");
-            return;
-        }
-        // Construct BluetoothChatService with useBle=true parameter
-       /* mChatService = new BluetoothChatService(this, new BleCocClientService.ChatHandler(), true);
-        mChatService.connect(mDevice, mSecure, mPsm);*/
-    }
-
-    private void leCheckConnectionType() {
-        if (mChatService == null) {
-            Log.e(TAG, "leCheckConnectionType: no LE Coc connection");
-            return;
-        }
-        int type = mChatService.getSocketConnectionType();
-        if (type != BluetoothSocket.TYPE_L2CAP) {
-            Log.e(TAG, "leCheckConnectionType: invalid connection type=" + type);
-            return;
-        }
-        showMessage("LE Coc Connection Type Checked");
-        //Intent intent = new Intent(BLE_CONNECTION_TYPE_CHECKED);
-        //sendBroadcast(intent);
-    }
-
-
-
-
-
-    private void startDiscovery() {
-        if (DEBUG) Log.d(TAG, "startDiscovery");
-        if( mBluetoothAdapter.isDiscovering())
-            mBluetoothAdapter.cancelDiscovery();
-        mBluetoothAdapter.startDiscovery();
-    }
-    private void stopDiscovery() {
-        if (DEBUG) Log.d(TAG, "stopDiscovery");
-        if( mBluetoothAdapter.isDiscovering())
-            mBluetoothAdapter.cancelDiscovery();
-    }
-
-
     private final BroadcastReceiver mBondStatusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -705,37 +433,26 @@ public class BluetoothPairingService extends Service {
 
                             //BD/EDR(A2DP) or BLE device.
                             mDevice = device;
-                            if( isA2dpDevice(mDevice)) {
-                                if (!mBluetoothAdapter.getProfileProxy(getApplicationContext(), mA2dpServiceConnection, BluetoothProfile.A2DP)) {
-                                    Log.d(TAG, "A2DP getProfileProxy failed");
-                                    mA2dpProfile = null;
-                                    break;
-                                }
-                                // regardless of the UUID content, at this point, we're sure we can initiate a
-                                // profile connection.
-                                Log.d(TAG, "send MSG_CONNECT message");
-                                mHandler.sendEmptyMessageDelayed(MSG_CONNECT_TIMEOUT, CONNECT_TIMEOUT_MS);
-                                if (!mHandler.hasMessages(MSG_CONNECT)) {
-                                    mHandler.sendEmptyMessageDelayed(MSG_CONNECT, CONNECT_DELAY);
-                                }
-                            } else if ( isInputDevice(device)){
-                                Log.d(TAG, "isInputDevice true");
-                                if (!mBluetoothAdapter.getProfileProxy(getApplicationContext(),
-                                        mHidHostServiceConnection, HID_HOST)) {
-                                    Log.d(TAG, "Hid getProfileProxy failed");
 
-                                    break;
-                                }
-
+                            if( !mBluetoothAdapter.getProfileProxy(getApplicationContext(), mServiceConnection, BluetoothProfile.A2DP)) {
+                                Log.d(TAG, "A2DP getProfileProxy failed");
+                                mA2dpProfile = null;
+                                break;
+                            }
+                            // regardless of the UUID content, at this point, we're sure we can initiate a
+                            // profile connection.
+                            Log.d(TAG, "send MSG_CONNECT message");
+                            mHandler.sendEmptyMessageDelayed(MSG_CONNECT_TIMEOUT, CONNECT_TIMEOUT_MS);
+                            if (!mHandler.hasMessages(MSG_CONNECT)) {
+                                mHandler.sendEmptyMessageDelayed(MSG_CONNECT, CONNECT_DELAY);
                             }
                         }
                         break;
                     case BluetoothDevice.BOND_NONE:
-                        notifyError("BOND_NONE");
+                        notifyError("Failed to create bond");
                         break;
                     case BluetoothDevice.BOND_BONDING:
                         // fall through
-                        Log.d(TAG, "BOND_BONDING");
                     default:
                         // wait for next state
                         break;
@@ -744,46 +461,32 @@ public class BluetoothPairingService extends Service {
         }
     };
 
-    private BluetoothProfile.ServiceListener mHidHostServiceConnection =
-            new BluetoothProfile.ServiceListener() {
-
-                @Override
-                public void onServiceDisconnected(int profile) {
-                    Log.w(TAG, "Service disconnected, perhaps unexpectedly");
-                    //todo : notify
-                }
-
-                @Override
-                public void onServiceConnected(int profile, BluetoothProfile proxy) {
-                    if (DEBUG) {
-                        Log.d(TAG, "hid host Connection made to bluetooth proxy.");
-                    }
-                    //todo : notify
-                    if ( mDevice != null)
-                        Toast.makeText( BluetoothPairingService.this, mDevice.getName() + " is connected ", Toast.LENGTH_SHORT).show();
-
-                }
-            };
-
     private BluetoothA2dp mA2dpProfile;
-    private final BluetoothProfile.ServiceListener mA2dpServiceConnection =
+    private final BluetoothProfile.ServiceListener mServiceConnection =
             new BluetoothProfile.ServiceListener() {
 
                 @Override
                 public void onServiceDisconnected(int profile) {
                     Log.w(TAG, "Service disconnected, perhaps unexpectedly");
+                    //unregisterConnectionStateReceiver();
+                    //closeA2dpProfileProxy();
+                    //failed();
                 }
 
                 @Override
                 public void onServiceConnected(int profile, BluetoothProfile proxy) {
                     if (DEBUG) {
-                        Log.d(TAG, "a2dp Connection made to bluetooth proxy." );
+                        Log.d(TAG, "Connection made to bluetooth proxy." );
                     }
                     mA2dpProfile = (BluetoothA2dp) proxy;
                     if (DEBUG) {
-                        Log.d(TAG, "Connecting to target: " + mDevice.getAddress() + " name : "+ mDevice.getName());
+                        Log.d(TAG, "Connecting to target: " + mDevice.getAddress() + " name : "+mDevice.getName());
                     }
 
+                    //registerConnectionStateReceiver();
+                    // We initiate SDP because connecting to A2DP before services are discovered leads to
+                    // error.
+                    //mTarget.fetchUuidsWithSdp();
                 }
             };
 
@@ -799,6 +502,75 @@ public class BluetoothPairingService extends Service {
                 return "STATE_DISCONNECTING";
             default:
                 return "STATE_UNKNOWN";
+        }
+    }
+    private class GattBatteryCallbacks extends BluetoothGattCallback {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            if (DEBUG) {
+                Log.d(TAG, "Connection status:" + status + " state:" + newState);
+            }
+            if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothGatt.STATE_CONNECTED) {
+                gatt.discoverServices();
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                if (DEBUG) {
+                    Log.e(TAG, "Service discovery failure on " + gatt);
+                }
+                return;
+            }
+
+            final BluetoothGattService battService = gatt.getService(GATT_BATTERY_SERVICE_UUID);
+            if (battService == null) {
+                if (DEBUG) {
+                    Log.d(TAG, "No battery service");
+                }
+                return;
+            }
+
+            final BluetoothGattCharacteristic battLevel =
+                    battService.getCharacteristic(GATT_BATTERY_LEVEL_CHARACTERISTIC_UUID);
+            if (battLevel == null) {
+                if (DEBUG) {
+                    Log.d(TAG, "No battery level");
+                }
+                return;
+            }
+
+            gatt.readCharacteristic(battLevel);
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt,
+                                         BluetoothGattCharacteristic characteristic, int status) {
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                if (DEBUG) {
+                    Log.e(TAG, "Read characteristic failure on " + gatt + " " + characteristic);
+                }
+                return;
+            }
+
+            if (GATT_BATTERY_LEVEL_CHARACTERISTIC_UUID.equals(characteristic.getUuid())) {
+                final int batteryLevel =
+                        characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        /*if (mBatteryPref != null && !mUnpairing) {
+                            mBatteryPref.setTitle(getString(R.string.accessory_battery,
+                                    batteryLevel));
+                            mBatteryPref.setVisible(true);
+                        }*/
+
+                        Log.d(TAG, "battery level : " + batteryLevel);
+                        Toast.makeText( BatteryLevelReader.this,"battery level : " + batteryLevel ,Toast.LENGTH_SHORT ).show();
+                    }
+                });
+            }
         }
     }
 

@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.theone.simpleshare.R;
+import com.theone.simpleshare.bluetooth.BatteryLevelReader;
 import com.theone.simpleshare.bluetooth.BluetoothPairingService;
 import com.theone.simpleshare.databinding.FragmentPairedBinding;
 
@@ -37,7 +38,7 @@ public class PairedFragment extends Fragment {
 
     private PairedViewModel pairedViewModel;
     private FragmentPairedBinding binding;
-    private final static String TAG = "HomeFragment";
+    private final static String TAG = "PairedFragment";
 
     private Context mContext;
     private RecyclerView mRecyclerView;
@@ -79,8 +80,12 @@ public class PairedFragment extends Fragment {
         mRecyclerAdapter.setOnItemClickListener(new RecyclerAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View v, int pos, Item item) {
-                Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
-
+                Toast.makeText(mContext, " pos : "+pos + " name : " + item.name , Toast.LENGTH_SHORT).show();
+                Log.d(TAG, " pos : "+pos + " name : " + item.name);
+                Intent intent = new Intent(mContext, BatteryLevelReader.class);
+                intent.setAction(BatteryLevelReader.BLUETOOTH_ACTION_READ_BATTERY_LEVEL);
+                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device);
+                mContext.startService(intent);
             }
         });
 
