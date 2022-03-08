@@ -2,15 +2,13 @@ package com.theone.simpleshare.bluetooth;
 
 
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
-import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
-import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTING;
 
-import android.annotation.SuppressLint;
+import static com.theone.simpleshare.bluetooth.BluetoothUtils.isA2dpDevice;
+import static com.theone.simpleshare.bluetooth.BluetoothUtils.isInputDevice;
+
 import android.app.Service;
-import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -18,29 +16,20 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.ParcelUuid;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import java.lang.reflect.Method;
+import com.theone.simpleshare.ui.paired.PairedFragment;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,8 +51,11 @@ public class BatteryLevelReader extends Service {
     public static final String BLUETOOTH_ACTION_REMOVE_BOND =
             "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_REMOVE_BOND";
 
-    public static final String BLUETOOTH_ACTION_READ_BATTERY_LEVEL =
-            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_READ_BATTERY_LEVEL";
+    public static final String BLUETOOTH_ACTION_GET_BONDED_DEVICES =
+            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_GET_BONDED_DEVICES";
+
+    public static final String BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE =
+            "com.theone.simpleshare.bluetooth.BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE";
 
     private static final UUID SERVICE_UUID =
             UUID.fromString("00009999-0000-1000-8000-00805f9b34fb");
@@ -88,7 +80,12 @@ public class BatteryLevelReader extends Service {
             UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
 
 
-
+    public static final String BATTERY_LEVEL =
+            "com.theone.simpleshare.bluetooth.BATTERY_LEVEL";
+    public static final String CONNECTION_STATE =
+            "com.theone.simpleshare.bluetooth.CONNECTION_STATE";
+    public static int NO_BATTTERY_INFO = -1;
+    public static int NO_CONNECTION_INFO = -1;
 
 
 
@@ -163,29 +160,37 @@ public class BatteryLevelReader extends Service {
         Log.d(TAG, "onTestFinish action : " + mCurrentAction);
         if (mCurrentAction != null) {
             switch (mCurrentAction) {
-                case BLUETOOTH_ACTION_READ_BATTERY_LEVEL: {
+                case BLUETOOTH_ACTION_GET_BONDED_DEVICES: {
+                    BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                    BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
 
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    mDevice = device;
 
-                    if (mDevice != null &&
-                            (mDevice.getType() == BluetoothDevice.DEVICE_TYPE_LE ||
-                                    mDevice.getType() == BluetoothDevice.DEVICE_TYPE_DUAL)) {
-                        // Only LE devices support GATT
-                        // Todo : need autoConnect???
-                        Log.d(TAG, "try connectGatt on "+mDevice.getName());
-                        mDeviceGatt = mDevice.connectGatt( BatteryLevelReader.this, true, new GattBatteryCallbacks());
-                    } else {
+                    Set<BluetoothDevice> devSet =  bluetoothAdapter.getBondedDevices();
+                    if( devSet.size() != 0) {
+                        for (BluetoothDevice device : devSet) {
+                            mDevice = device;
 
-                        if (mDevice.getType() == BluetoothDevice.DEVICE_TYPE_CLASSIC){
-                            Log.e(TAG, "DEVICE_TYPE_CLASSIC device..");
-                        } else {
-                            Log.e(TAG, "~~~~~~~~error");
-                            Log.e(TAG, "mDevice.getName() : "+ mDevice.getName());
-                            Log.e(TAG, "mDevice.getType() : "+ mDevice.getType());
+                            if (mDevice != null &&
+                                    (mDevice.getType() == BluetoothDevice.DEVICE_TYPE_LE ||
+                                            mDevice.getType() == BluetoothDevice.DEVICE_TYPE_DUAL)) {
+                                // Only LE devices support GATT
+                                // Todo : need autoConnect???
+                                Log.d(TAG, "try connectGatt on "+mDevice.getName());
+                                mDeviceGatt = mDevice.connectGatt( BatteryLevelReader.this, true, new GattBatteryCallbacks());
+                            } else {
+
+                                if (mDevice.getType() == BluetoothDevice.DEVICE_TYPE_CLASSIC){
+                                    Log.e(TAG, "DEVICE_TYPE_CLASSIC device..");
+                                } else {
+                                    Log.e(TAG, "~~~~~~~~error");
+                                    Log.e(TAG, "mDevice.getName() : "+ mDevice.getName());
+                                    Log.e(TAG, "mDevice.getType() : "+ mDevice.getType());
+                                }
+                            }
+
                         }
-
                     }
+
                 }
                     break;
                 default:
@@ -442,9 +447,16 @@ public class BatteryLevelReader extends Service {
                 if (DEBUG) {
                     Log.d(TAG, "No battery level");
                 }
-                return;
-            }
 
+                Log.d(TAG, "send device and battery level");
+                Intent intent = new Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE);
+                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, mDevice);
+                intent.putExtra(BATTERY_LEVEL, NO_BATTTERY_INFO);
+                //intent.putExtra(CONNECTION_STATE, getConnectionState(mDevice));
+                sendBroadcast(intent);
+                return;
+
+            }
             gatt.readCharacteristic(battLevel);
         }
 
@@ -472,11 +484,30 @@ public class BatteryLevelReader extends Service {
 
                         Log.d(TAG, "battery level : " + batteryLevel);
                         Toast.makeText( BatteryLevelReader.this,"battery level : " + batteryLevel ,Toast.LENGTH_SHORT ).show();
+                        BluetoothDevice device = gatt.getDevice();
+                        Intent intent = new Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE);
+                        intent.putExtra(BluetoothDevice.EXTRA_DEVICE, device);
+                        intent.putExtra(BATTERY_LEVEL, batteryLevel);
+                        //intent.putExtra(CONNECTION_STATE, getConnectionState(device));
+                        sendBroadcast(intent);
+
                     }
                 });
             }
         }
     }
 
+    int getConnectionState(BluetoothDevice device){
+        int connectionState = 0;
+        if( isA2dpDevice(device)){
+            connectionState = mBluetoothManager.getConnectionState(device, BluetoothProfile.A2DP);
+        } else if ( isInputDevice(device)) {
+            connectionState = mBluetoothManager.getConnectionState(device, BluetoothProfile.HID_DEVICE);
+        } else {
+            Log.d(TAG, "ignore connection state");
+            connectionState= -1;
+        }
+        return connectionState;
+    }
 
 }

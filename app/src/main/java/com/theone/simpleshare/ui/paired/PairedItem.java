@@ -2,33 +2,42 @@ package com.theone.simpleshare.ui.paired;
 
 import android.bluetooth.BluetoothDevice;
 
-public class Item {
+public class PairedItem {
     String name;
-    String message;
+    String address;
     int resourceId;
     BluetoothDevice device;
-
-    public Item(int resourceId, String name, String message, BluetoothDevice device) {
+    int batteryLevel;
+    int state;
+    public PairedItem(int resourceId, String name, String message, BluetoothDevice device, int state, int batteryLevel) {
         this.name = name;
-        this.message = message;
+        this.address = message;
         this.resourceId = resourceId;
         this.device = device;
+        this.state = state;
+        this.batteryLevel = batteryLevel;
     }
 
     public int getResourceId() {
         return resourceId;
     }
+    public int getState() {
+        return state;
+    }
+    public void setState(int state) {
+        this.state = state;
+    }
 
-    public String getMessage() {
-        return message;
+    public String getAddress() {
+        return address;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setAddress(String message) {
+        this.address = message;
     }
 
     public void setName(String name) {

@@ -780,6 +780,7 @@ public class BluetoothPairingService extends Service {
                         Log.d(TAG, "a2dp Connection made to bluetooth proxy." );
                     }
                     mA2dpProfile = (BluetoothA2dp) proxy;
+
                     if (DEBUG) {
                         Log.d(TAG, "Connecting to target: " + mDevice.getAddress() + " name : "+ mDevice.getName());
                     }

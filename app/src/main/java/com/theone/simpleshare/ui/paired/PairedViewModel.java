@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class PairedViewModel extends ViewModel {
 
     private final MutableLiveData<String> mText;
-    private final MutableLiveData<ArrayList<Item>> mItemList;
+    private final MutableLiveData<ArrayList<PairedItem>> mItemList;
     public PairedViewModel() {
         mText = new MutableLiveData<>();
         mText.setValue("This is home fragment");
@@ -22,7 +22,7 @@ public class PairedViewModel extends ViewModel {
         return mText;
     }
 
-    public LiveData<ArrayList<Item>> getList(){
+    public LiveData<ArrayList<PairedItem>> getList(){
         return mItemList;
     }
 

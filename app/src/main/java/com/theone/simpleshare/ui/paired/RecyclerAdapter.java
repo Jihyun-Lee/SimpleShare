@@ -18,12 +18,12 @@ import java.util.ArrayList;
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
 
 
-    private ArrayList<Item> mItemList;
+    private ArrayList<PairedItem> mItemList;
     Context mContext;
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType){
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recyclerview, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.paired_item_recyclerview, parent, false);
         mContext = parent.getContext();
         return new ViewHolder(view);
     }
@@ -37,11 +37,11 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
         return mItemList.size();
     }
 
-    public void setItemList(ArrayList<Item> list){
+    public void setItemList(ArrayList<PairedItem> list){
         this.mItemList = list;
         notifyDataSetChanged();
     }
-    public Item getItemFromList(int position){
+    public PairedItem getItemFromList(int position){
         return this.mItemList.get(position);
     }
 
@@ -52,7 +52,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     }
 
     public interface OnItemClickListener {
-        void onItemClick(View v, int pos , Item item);
+        void onItemClick(View v, int pos , PairedItem item);
     }
     private  OnItemClickListener mListener=null;
     public void setOnItemClickListener( OnItemClickListener listener){
@@ -88,10 +88,12 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
         }
 
-        void onBind(Item item){
+        void onBind(PairedItem item){
             profile.setImageResource(item.getResourceId());
             name.setText(item.getName());
-            address.setText(item.getMessage());
+            address.setText(item.getAddress());
+            state.setText(""+ item.state);
+            batteryLevel.setText(item.batteryLevel + "%");
 
         }
 

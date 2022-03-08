@@ -2,9 +2,13 @@ package com.theone.simpleshare.ui.paired;
 
 
 
-import android.bluetooth.BluetoothAdapter;
+import static com.theone.simpleshare.bluetooth.BatteryLevelReader.BATTERY_LEVEL;
+import static com.theone.simpleshare.bluetooth.BatteryLevelReader.BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE;
+import static com.theone.simpleshare.bluetooth.BatteryLevelReader.CONNECTION_STATE;
+import static com.theone.simpleshare.bluetooth.BatteryLevelReader.NO_BATTTERY_INFO;
+import static com.theone.simpleshare.bluetooth.BatteryLevelReader.NO_CONNECTION_INFO;
+
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -32,7 +36,6 @@ import com.theone.simpleshare.bluetooth.BluetoothPairingService;
 import com.theone.simpleshare.databinding.FragmentPairedBinding;
 
 import java.util.ArrayList;
-import java.util.Set;
 
 public class PairedFragment extends Fragment {
 
@@ -65,9 +68,9 @@ public class PairedFragment extends Fragment {
             }
         });
 
-        pairedViewModel.getList().observe(getViewLifecycleOwner(), new Observer<ArrayList<Item>>() {
+        pairedViewModel.getList().observe(getViewLifecycleOwner(), new Observer<ArrayList<PairedItem>>() {
             @Override
-            public void onChanged(ArrayList<Item> items) {
+            public void onChanged(ArrayList<PairedItem> items) {
                 //ui
                 Log.d(TAG, "onChanged");
                 mRecyclerAdapter.notifyDataSetChanged();
@@ -76,7 +79,7 @@ public class PairedFragment extends Fragment {
         });
 
         setupRecyclerView();
-        drawBondedDevices();
+        getBondedDevicesIntent();
 
         return root;
     }
@@ -90,11 +93,11 @@ public class PairedFragment extends Fragment {
 
         mRecyclerAdapter.setOnItemClickListener(new RecyclerAdapter.OnItemClickListener() {
             @Override
-            public void onItemClick(View v, int pos, Item item) {
+            public void onItemClick(View v, int pos, PairedItem item) {
                 Toast.makeText(mContext, " pos : "+pos + " name : " + item.name , Toast.LENGTH_SHORT).show();
                 Log.d(TAG, " pos : "+pos + " name : " + item.name);
                 Intent intent = new Intent(mContext, BatteryLevelReader.class);
-                intent.setAction(BatteryLevelReader.BLUETOOTH_ACTION_READ_BATTERY_LEVEL);
+                intent.setAction(BatteryLevelReader.BLUETOOTH_ACTION_GET_BONDED_DEVICES);
                 intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device);
                 mContext.startService(intent);
             }
@@ -115,7 +118,7 @@ public class PairedFragment extends Fragment {
 
                 Intent intent = new Intent(mContext, BluetoothPairingService.class);
                 intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_REMOVE_BOND);
-                Item item = mRecyclerAdapter.getItemFromList(position);
+                PairedItem item = mRecyclerAdapter.getItemFromList(position);
                 intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device);
                 mContext.startService(intent);
 
@@ -141,11 +144,18 @@ public class PairedFragment extends Fragment {
             }
         });
     }
-    private void drawBondedDevices(){
+    private void getBondedDevicesIntent(){
+        /*refresh rv*/
+        mRecyclerAdapter.clear();
+
+        Intent intent = new Intent(mContext, BatteryLevelReader.class);
+        intent.setAction(BatteryLevelReader.BLUETOOTH_ACTION_GET_BONDED_DEVICES);
+        mContext.startService(intent);
+
+        /*
         BluetoothManager bluetoothManager = (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
 
-        /*refresh rv*/
         mRecyclerAdapter.clear();
         Set<BluetoothDevice> devSet =  bluetoothAdapter.getBondedDevices();
         if( devSet.size() != 0) {
@@ -160,7 +170,9 @@ public class PairedFragment extends Fragment {
                           "empty", null));
 
         }
-        mRecyclerAdapter.notifyDataSetChanged();
+
+
+         */
     }
 
     private final BroadcastReceiver mBroadcast = new BroadcastReceiver() {
@@ -173,6 +185,14 @@ public class PairedFragment extends Fragment {
                 Log.d(TAG, "Processing " + action);
             }
             switch (action) {
+                case BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE:
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    int battLevel = intent.getIntExtra(BATTERY_LEVEL, NO_BATTTERY_INFO);
+                    int connectionState = intent.getIntExtra(CONNECTION_STATE, NO_CONNECTION_INFO);
+                    pairedViewModel.getList().getValue().add(new PairedItem(R.drawable.ic_launcher_foreground, device.getName(),
+                            device.getAddress(), device, connectionState, battLevel));
+                    mRecyclerAdapter.notifyItemInserted(pairedViewModel.getList().getValue().size()-1);
+                    break;
 
                 default:
                     Log.e(TAG, "onReceive: Error: unhandled action=" + action);
@@ -188,7 +208,7 @@ public class PairedFragment extends Fragment {
 
     private void registerReceiver(){
         IntentFilter filter = new IntentFilter();
-        //filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE);
         mContext.registerReceiver(mBroadcast, filter);
     }
 
