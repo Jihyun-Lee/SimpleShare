@@ -32,7 +32,6 @@
         <service android:name=".bluetooth.BleCocClientService" />
         <!-- CTS Verifier BLE CoC Server Test Service -->
         <service android:name=".bluetooth.BleCocServerService" />
-
         <service android:name=".bluetooth.BluetoothPairingService" />
         <service android:name=".bluetooth.BatteryLevelReader" />
 
