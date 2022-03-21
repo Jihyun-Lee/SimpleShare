@@ -23,7 +23,7 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.onBind(mItemList!![position])
+        holder.onBind(mItemList[position])
     }
 
     fun setItemList(list: ArrayList<Item>?) {
@@ -36,7 +36,7 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
     fun getItemFromList(position: Int): Item = mItemList[position]
 
     fun removeItemFromList(position: Int) {
-        mItemList!!.removeAt(position)
+        mItemList.removeAt(position)
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, itemCount)
     }

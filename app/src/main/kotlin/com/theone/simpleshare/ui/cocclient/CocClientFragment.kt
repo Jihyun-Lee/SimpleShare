@@ -36,12 +36,14 @@ class CocClientFragment : Fragment() {
                     textView.setText(s)
             }
 
-
         mContext = activity as Context
-        val intent = Intent(mContext, BleCocClientService::class.java)
-        intent.setAction(BleCocClientService.BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT)
-        Toast.makeText(mContext, "start coc insecure client service", Toast.LENGTH_LONG).show()
-        mContext!!.startService(intent)
+        mContext.let { it ->
+            with(Intent(it, BleCocClientService::class.java)){
+                setAction(BleCocClientService.BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT)
+                Toast.makeText(it, "start coc insecure client service", Toast.LENGTH_LONG).show()
+                it.startService(this)
+            }
+        }
         return root
     }
 
@@ -54,23 +56,25 @@ class CocClientFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun registerReceiver() {
-        val filter = IntentFilter()
-        filter.addAction(BleCocClientService.BLE_LE_CONNECTED)
-        filter.addAction(BleCocClientService.BLE_GOT_PSM)
-        filter.addAction(BleCocClientService.BLE_COC_CONNECTED)
-        filter.addAction(BleCocClientService.BLE_CONNECTION_TYPE_CHECKED)
-        filter.addAction(BleCocClientService.BLE_DATA_8BYTES_SENT)
-        filter.addAction(BleCocClientService.BLE_DATA_8BYTES_READ)
-        filter.addAction(BleCocClientService.BLE_DATA_LARGEBUF_READ)
-        filter.addAction(BleCocClientService.BLE_LE_DISCONNECTED)
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_DISCONNECTED)
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_DISABLED)
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_SECURE)
-        filter.addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_INSECURE)
-        filter.addAction(BleCocClientService.BLE_CLIENT_ERROR)
-        mContext!!.registerReceiver(mBroadcast, filter)
-    }
+    private fun registerReceiver() =
+            IntentFilter().apply {
+            addAction(BleCocClientService.BLE_LE_CONNECTED)
+            addAction(BleCocClientService.BLE_GOT_PSM)
+            addAction(BleCocClientService.BLE_COC_CONNECTED)
+            addAction(BleCocClientService.BLE_CONNECTION_TYPE_CHECKED)
+            addAction(BleCocClientService.BLE_DATA_8BYTES_SENT)
+            addAction(BleCocClientService.BLE_DATA_8BYTES_READ)
+            addAction(BleCocClientService.BLE_DATA_LARGEBUF_READ)
+            addAction(BleCocClientService.BLE_LE_DISCONNECTED)
+            addAction(BleCocClientService.BLE_BLUETOOTH_DISCONNECTED)
+            addAction(BleCocClientService.BLE_BLUETOOTH_DISABLED)
+            addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_SECURE)
+            addAction(BleCocClientService.BLE_BLUETOOTH_MISMATCH_INSECURE)
+            addAction(BleCocClientService.BLE_CLIENT_ERROR)
+            mContext.registerReceiver(mBroadcast, this)
+        }
+
+
 
     private val mBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -138,7 +142,7 @@ class CocClientFragment : Fragment() {
             if (newAction != null) {
                 Log.d(TAG, "Starting $newAction")
                 startIntent.setAction(newAction)
-                mContext!!.startService(startIntent)
+                mContext.startService(startIntent)
             }
         }
     }

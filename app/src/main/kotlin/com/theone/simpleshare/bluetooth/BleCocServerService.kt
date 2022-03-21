@@ -109,10 +109,6 @@ class BleCocServerService : Service() {
         mHandler = Handler(Looper.getMainLooper())
         if (!mBluetoothManager.adapter.isEnabled) {
             notifyBluetoothDisabled()
-        } else if (mGattServer == null) {
-            notifyOpenFail()
-        } else if (mAdvertiser == null) {
-            notifyAdvertiseUnsupported()
         } else {
             // start adding services
             mSecure = false
@@ -142,10 +138,10 @@ class BleCocServerService : Service() {
 
     private fun startServerTest(secure: Boolean) {
         mSecure = secure
-        if (mBluetoothManager.adapter.isEnabled && mChatService == null) {
+        if (mBluetoothManager.adapter.isEnabled) {
             createChatService()
         }
-        if (mBluetoothManager.adapter.isEnabled && mAdvertiser != null) {
+        if (mBluetoothManager.adapter.isEnabled) {
             startAdvertise()
         }
     }
@@ -170,26 +166,23 @@ class BleCocServerService : Service() {
             buf[i] = (i + 1).toByte()
         }
         mNextWriteExpectedLen = len
-
         sendMessage(buf)
     }
 
     private fun onTestFinish(action: String) {
         mCurrentAction = action
-        if (mCurrentAction != null) {
-            when (mCurrentAction) {
-                BLE_ACTION_COC_SERVER_INSECURE -> startServerTest(false)
-                BLE_ACTION_COC_SERVER_SECURE -> startServerTest(true)
-                BLE_COC_SERVER_ACTION_SEND_DATA_8BYTES -> sendData8bytes()
-                BLE_COC_SERVER_ACTION_EXCHANGE_DATA -> {
-                    sendDataLargeBuf()
-                    readDataLargeBuf()
-                }
-                BLE_COC_SERVER_ACTION_DISCONNECT -> if (mChatService != null) {
-                    mChatService!!.stop()
-                }
-                else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
+        when (mCurrentAction) {
+            BLE_ACTION_COC_SERVER_INSECURE -> startServerTest(false)
+            BLE_ACTION_COC_SERVER_SECURE -> startServerTest(true)
+            BLE_COC_SERVER_ACTION_SEND_DATA_8BYTES -> sendData8bytes()
+            BLE_COC_SERVER_ACTION_EXCHANGE_DATA -> {
+                sendDataLargeBuf()
+                readDataLargeBuf()
             }
+            BLE_COC_SERVER_ACTION_DISCONNECT -> {
+                mChatService.stop()
+            }
+            else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
         }
     }
 
@@ -199,44 +192,38 @@ class BleCocServerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mChatService != null) {
-            mChatService.stop()
-        }
+        mChatService.stop()
+
         cancelNotificationTaskOfSecureTestStartFailure()
         stopAdvertise()
         mTaskQueue.quit()
-        if (mGattServer == null) {
-            return
+        mGattServer.apply {
+            cancelConnection(mDevice)
+            clearServices()
+            close()
         }
-        if (mDevice != null) {
-            mGattServer.cancelConnection(mDevice)
-        }
-        mGattServer.clearServices()
-        mGattServer.close()
+
     }
 
     private fun notifyOpenFail() {
         if (DEBUG) {
             Log.d(TAG, "notifyOpenFail")
         }
-        val intent = Intent(BLE_OPEN_FAIL)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_OPEN_FAIL))
     }
 
     private fun notifyAddServiceFail() {
         if (DEBUG) {
             Log.d(TAG, "notifyAddServiceFail")
         }
-        val intent = Intent(BLE_ADD_SERVICE_FAIL)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_ADD_SERVICE_FAIL))
     }
 
     private fun notifyAdvertiseUnsupported() {
         if (DEBUG) {
             Log.d(TAG, "notifyAdvertiseUnsupported")
         }
-        val intent = Intent(BLE_ADVERTISE_UNSUPPORTED)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_ADVERTISE_UNSUPPORTED))
     }
 
     private fun notifyConnected() {
@@ -338,12 +325,7 @@ class BleCocServerService : Service() {
             device: BluetoothDevice, requestId: Int, offset: Int,
             characteristic: BluetoothGattCharacteristic
         ) {
-            if (mGattServer == null) {
-                if (DEBUG) {
-                    Log.d(TAG, "GattServer is null, return")
-                }
-                return
-            }
+
             if (DEBUG) {
                 Log.d(TAG, "onCharacteristicReadRequest()")
             }
@@ -374,10 +356,7 @@ class BleCocServerService : Service() {
     }
 
     private fun leCheckConnectionType() {
-        if (mChatService == null) {
-            Log.e(TAG, "leCheckConnectionType: no LE Coc connection")
-            return
-        }
+
         val type = mChatService.socketConnectionType
         if (type != BluetoothSocket.TYPE_L2CAP) {
             Log.e(TAG, "leCheckConnectionType: invalid connection type=$type")
@@ -487,17 +466,14 @@ class BleCocServerService : Service() {
                     + mNextWriteExpectedLen
         )
         if (len == mNextWriteExpectedLen) {
-            if (mNextWriteCompletionIntent != null) {
-                val intent = Intent(mNextWriteCompletionIntent)
-                sendBroadcast(intent)
-            }
+            sendBroadcast(Intent(mNextWriteCompletionIntent))
         } else {
             Log.d(TAG, "handleMessageWrite: unrecognized length=$len")
         }
         mNextWriteExpectedLen = -1
     }
 
-    private inner class ChatHandler : Handler() {
+    private inner class ChatHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
             if (DEBUG) {
@@ -550,9 +526,7 @@ class BleCocServerService : Service() {
         if (DEBUG) {
             Log.d(TAG, "stopAdvertise")
         }
-        if (mAdvertiser != null) {
-            mAdvertiser.stopAdvertising(mAdvertiseCallback)
-        }
+        mAdvertiser.stopAdvertising(mAdvertiseCallback)
     }
 
     private val mAdvertiseCallback: AdvertiseCallback = object : AdvertiseCallback() {

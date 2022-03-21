@@ -173,7 +173,7 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
                     })
                     setItemsClickable(recyclerView, true)
                     swipeBack = false
-                    if (buttonsActions != null && buttonInstance != null && buttonInstance.contains(
+                    if (buttonInstance.contains(
                             event.x,
                             event.y
                         )

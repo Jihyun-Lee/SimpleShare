@@ -89,7 +89,7 @@ class BleCocClientService : Service() {
         mBluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         mBluetoothAdapter = mBluetoothManager.adapter
         mScanner = mBluetoothAdapter.bluetoothLeScanner
-        mHandler = Handler()
+        mHandler = Handler(Looper.getMainLooper())
         mTaskQueue = TestTaskQueue(javaClass.name + "_taskHandlerThread")
     }
 
@@ -107,31 +107,29 @@ class BleCocClientService : Service() {
             mCurrentAction = action
         }
         Log.d(TAG, "onTestFinish action : $action")
-        if (mCurrentAction != null) {
-            when (mCurrentAction) {
-                BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT -> {
-                    mSecure = false
-                    startScan()
-                }
-                BLE_COC_CLIENT_ACTION_LE_SECURE_CONNECT -> {
-                    mSecure = true
-                    startScan()
-                }
-                BLE_COC_CLIENT_ACTION_GET_PSM -> startLeDiscovery()
-                BLE_COC_CLIENT_ACTION_COC_CLIENT_CONNECT -> leCocClientConnect()
-                BLE_COC_CLIENT_ACTION_CHECK_CONNECTION_TYPE -> leCheckConnectionType()
-                BLE_COC_CLIENT_ACTION_SEND_DATA_8BYTES -> sendData8bytes()
-                BLE_COC_CLIENT_ACTION_READ_DATA_8BYTES -> readData8bytes()
-                BLE_COC_CLIENT_ACTION_EXCHANGE_DATA -> {
-                    sendDataLargeBuf()
-                    readDataLargeBuf()
-                }
-                BLE_CLIENT_ACTION_CLIENT_DISCONNECT -> {
-                    mBluetoothGatt.disconnect()
-                    mChatService.stop()
-                }
-                else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
+        when (mCurrentAction) {
+            BLE_COC_CLIENT_ACTION_LE_INSECURE_CONNECT -> {
+                mSecure = false
+                startScan()
             }
+            BLE_COC_CLIENT_ACTION_LE_SECURE_CONNECT -> {
+                mSecure = true
+                startScan()
+            }
+            BLE_COC_CLIENT_ACTION_GET_PSM -> startLeDiscovery()
+            BLE_COC_CLIENT_ACTION_COC_CLIENT_CONNECT -> leCocClientConnect()
+            BLE_COC_CLIENT_ACTION_CHECK_CONNECTION_TYPE -> leCheckConnectionType()
+            BLE_COC_CLIENT_ACTION_SEND_DATA_8BYTES -> sendData8bytes()
+            BLE_COC_CLIENT_ACTION_READ_DATA_8BYTES -> readData8bytes()
+            BLE_COC_CLIENT_ACTION_EXCHANGE_DATA -> {
+                sendDataLargeBuf()
+                readDataLargeBuf()
+            }
+            BLE_CLIENT_ACTION_CLIENT_DISCONNECT -> {
+                mBluetoothGatt.disconnect()
+                mChatService.stop()
+            }
+            else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
         }
     }
 
@@ -179,7 +177,7 @@ class BleCocClientService : Service() {
 
     private fun startLeDiscovery() {
         // Start Service Discovery
-        if (mBluetoothGatt != null && mBleState == BluetoothProfile.STATE_CONNECTED) {
+        if (mBleState == BluetoothProfile.STATE_CONNECTED) {
             mBluetoothGatt.discoverServices()
         } else {
             showMessage("Bluetooth LE GATT not connected.")
@@ -201,10 +199,8 @@ class BleCocClientService : Service() {
     }
 
     private val service: BluetoothGattService?
-        private get() {
-            var service: BluetoothGattService? = null
-
-            service = mBluetoothGatt.getService(SERVICE_UUID)
+        get() {
+            var service = mBluetoothGatt.getService(SERVICE_UUID)
             if (service == null) {
                 showMessage("GATT Service not found")
             }
@@ -241,7 +237,7 @@ class BleCocClientService : Service() {
                     val bondState = gatt.device.bondState
                     var bonded = false
                     val target = gatt.device
-                    val pairedDevices = mBluetoothAdapter!!.bondedDevices
+                    val pairedDevices = mBluetoothAdapter.bondedDevices
                     if (!pairedDevices.isEmpty()) {
                         for (device in pairedDevices) {
                             if (device.address == target.address) {
@@ -325,50 +321,48 @@ class BleCocClientService : Service() {
     private val mScanCallback: ScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             Log.d(TAG, "onScanResult")
-            if (mBluetoothGatt == null) {
-                // verify the validity of the advertisement packet.
-                mValidityService = false
-                val uuids = result.scanRecord!!.serviceUuids
-                for (uuid in uuids) {
-                    if (uuid.uuid == BleCocServerService.Companion.ADV_COC_SERVICE_UUID) {
-                        if (DEBUG) {
-                            Log.d(TAG, "onScanResult: Found ADV with LE CoC Service UUID.")
-                        }
-                        mValidityService = true
-                        break
-                    }
-                }
-                if (mValidityService) {
-                    stopScan()
-                    val device = result.device
+            // verify the validity of the advertisement packet.
+            mValidityService = false
+            val uuids = result.scanRecord!!.serviceUuids
+            for (uuid in uuids) {
+                if (uuid.uuid == BleCocServerService.Companion.ADV_COC_SERVICE_UUID) {
                     if (DEBUG) {
-                        Log.d(
-                            TAG, "onScanResult: Found ADV with CoC UUID on device="
-                                    + device
-                        )
+                        Log.d(TAG, "onScanResult: Found ADV with LE CoC Service UUID.")
                     }
-                    if (mSecure) {
-                        if (device.bondState != BluetoothDevice.BOND_BONDED) {
-                            if (!device.createBond()) {
-                                notifyError("Failed to call create bond")
-                            }
-                        } else {
-                            mDevice = device
-                            mBluetoothGatt = connectGatt(
-                                result.device, this@BleCocClientService, false,
-                                mSecure, mGattCallbacks
-                            )
+                    mValidityService = true
+                    break
+                }
+            }
+            if (mValidityService) {
+                stopScan()
+                val device = result.device
+                if (DEBUG) {
+                    Log.d(
+                        TAG, "onScanResult: Found ADV with CoC UUID on device="
+                                + device
+                    )
+                }
+                if (mSecure) {
+                    if (device.bondState != BluetoothDevice.BOND_BONDED) {
+                        if (!device.createBond()) {
+                            notifyError("Failed to call create bond")
                         }
                     } else {
                         mDevice = device
                         mBluetoothGatt = connectGatt(
-                            result.device, this@BleCocClientService, false, mSecure,
-                            mGattCallbacks
+                            result.device, this@BleCocClientService, false,
+                            mSecure, mGattCallbacks
                         )
                     }
                 } else {
-                    notifyError("No valid service in Advertisement")
+                    mDevice = device
+                    mBluetoothGatt = connectGatt(
+                        result.device, this@BleCocClientService, false, mSecure,
+                        mGattCallbacks
+                    )
                 }
+            } else {
+                notifyError("No valid service in Advertisement")
             }
         }
     }
@@ -437,16 +431,13 @@ class BleCocClientService : Service() {
         val len = buffer.size
         showMessage("LE Coc Client wrote $len bytes")
         if (len == mNextWriteExpectedLen) {
-            if (mNextWriteCompletionIntent != null) {
-                val intent = Intent(mNextWriteCompletionIntent)
-                sendBroadcast(intent)
-            }
+            sendBroadcast(Intent(mNextWriteCompletionIntent))
         } else {
             Log.d(TAG, "handleMessageWrite: unrecognized length=$len")
         }
     }
 
-    private inner class ChatHandler : Handler() {
+    private inner class ChatHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
             if (DEBUG) {
@@ -477,20 +468,13 @@ class BleCocClientService : Service() {
         if (DEBUG) {
             Log.d(TAG, "leCocClientConnect: device=$mDevice, mSecure=$mSecure")
         }
-        if (mDevice == null) {
-            Log.e(TAG, "leCocClientConnect: mDevice is null")
-            return
-        }
+
         // Construct BluetoothChatService with useBle=true parameter
         mChatService = BluetoothChatService(this, ChatHandler(), true)
-        mChatService!!.connect(mDevice!!, mSecure, mPsm)
+        mChatService.connect(mDevice, mSecure, mPsm)
     }
 
     private fun leCheckConnectionType() {
-        if (mChatService == null) {
-            Log.e(TAG, "leCheckConnectionType: no LE Coc connection")
-            return
-        }
         val type = mChatService.socketConnectionType
         if (type != BluetoothSocket.TYPE_L2CAP) {
             Log.e(TAG, "leCheckConnectionType: invalid connection type=$type")
@@ -542,14 +526,12 @@ class BleCocClientService : Service() {
         )
         val setting = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
-        mScanner!!.startScan(filter, setting, mScanCallback)
+        mScanner.startScan(filter, setting, mScanCallback)
     }
 
     private fun stopScan() {
         if (DEBUG) Log.d(TAG, "stopScan")
-        if (mScanner != null) {
-            mScanner!!.stopScan(mScanCallback)
-        }
+        mScanner.stopScan(mScanCallback)
     }
 
     private val mBondStatusReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -562,7 +544,7 @@ class BleCocClientService : Service() {
                     BluetoothDevice.BOND_NONE
                 )
                 when (state) {
-                    BluetoothDevice.BOND_BONDED -> if (mBluetoothGatt == null) {
+                    BluetoothDevice.BOND_BONDED -> {
                         if (DEBUG) {
                             Log.d(
                                 TAG, "onReceive:BOND_BONDED: calling connectGatt. device="

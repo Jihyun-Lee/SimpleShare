@@ -110,10 +110,8 @@ class BatteryLevelReader : Service() {
                     if (devSet.size != 0) {
                         for (device in devSet) {
                             mDevice = device
-                            if (mDevice != null &&
-                                (mDevice.type == BluetoothDevice.DEVICE_TYPE_LE ||
-                                        mDevice.type == BluetoothDevice.DEVICE_TYPE_DUAL)
-                            ) {
+                            if (mDevice.type == BluetoothDevice.DEVICE_TYPE_LE ||
+                                        mDevice.type == BluetoothDevice.DEVICE_TYPE_DUAL) {
                                 // Only LE devices support GATT
                                 // Todo : need autoConnect???
                                 Log.d(TAG, "try connectGatt on " + mDevice.name)
@@ -125,8 +123,8 @@ class BatteryLevelReader : Service() {
                             } else {
                                 if (mDevice.type == BluetoothDevice.DEVICE_TYPE_CLASSIC) {
                                     Log.e(TAG, "DEVICE_TYPE_CLASSIC device..")
-                                    val intent = Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE)
-                                    intent.apply {
+
+                                    Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE).apply {
                                         putExtra(BluetoothDevice.EXTRA_DEVICE, mDevice)
                                         putExtra(BATTERY_LEVEL, NO_BATTTERY_INFO)
                                         sendBroadcast(this)
@@ -194,7 +192,7 @@ class BatteryLevelReader : Service() {
 
     private fun startLeDiscovery() {
         // Start Service Discovery
-        if (mBluetoothGatt != null && mBleState == BluetoothProfile.STATE_CONNECTED) {
+        if (mBleState == BluetoothProfile.STATE_CONNECTED) {
             mBluetoothGatt.discoverServices()
         } else {
             showMessage("Bluetooth LE GATT not connected.")
@@ -217,13 +215,10 @@ class BatteryLevelReader : Service() {
     }
 
     private val service: BluetoothGattService?
-        private get() {
-            var service: BluetoothGattService? = null
-            if (mBluetoothGatt != null) {
-                service = mBluetoothGatt.getService(SERVICE_UUID)
-                if (service == null) {
-                    showMessage("GATT Service not found")
-                }
+        get() {
+            var service = mBluetoothGatt.getService(SERVICE_UUID)
+            if (service == null) {
+                showMessage("GATT Service not found")
             }
             return service
         }
@@ -396,7 +391,7 @@ class BatteryLevelReader : Service() {
             if (GATT_BATTERY_LEVEL_CHARACTERISTIC_UUID == characteristic.uuid) {
                 val batteryLevel =
                     characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0)
-                mHandler!!.post { /*if (mBatteryPref != null && !mUnpairing) {
+                mHandler.post { /*if (mBatteryPref != null && !mUnpairing) {
                             mBatteryPref.setTitle(getString(R.string.accessory_battery,
                                     batteryLevel));
                             mBatteryPref.setVisible(true);
@@ -419,8 +414,7 @@ class BatteryLevelReader : Service() {
     }
 
     fun getConnectionState(device: BluetoothDevice?): Int {
-        var connectionState = 0
-        connectionState = if (BluetoothUtils.isA2dpDevice(device)) {
+        var connectionState = if (BluetoothUtils.isA2dpDevice(device)) {
             mBluetoothManager.getConnectionState(device, BluetoothProfile.A2DP)
         } else if (BluetoothUtils.isInputDevice(device)) {
             mBluetoothManager.getConnectionState(device, BluetoothProfile.HID_DEVICE)

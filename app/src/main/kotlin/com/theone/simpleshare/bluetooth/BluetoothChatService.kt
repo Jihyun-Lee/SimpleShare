@@ -180,11 +180,11 @@ class BluetoothChatService {
         state = STATE_LISTEN
 
         // Start the thread to listen on a BluetoothServerSocket
-        if (secure && mSecureAcceptThread == null) {
+        if (secure) {
             mSecureAcceptThread = AcceptThread(true)
             mSecureAcceptThread.start()
         }
-        if (!secure && mInsecureAcceptThread == null) {
+        if (!secure) {
             mInsecureAcceptThread = AcceptThread(false)
             mInsecureAcceptThread.start()
         }
@@ -217,16 +217,12 @@ class BluetoothChatService {
 
         // Cancel any thread attempting to make a connection
         if (mState == STATE_CONNECTING) {
-            if (mConnectThread != null) {
-                mConnectThread.cancel()
-
-            }
+            mConnectThread.cancel()
         }
 
         // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel()
-        }
+        mConnectedThread.cancel()
+
 
         // Start the thread to connect with the given device
         mConnectThread = ConnectThread(device, secure, psm)
@@ -350,30 +346,26 @@ class BluetoothChatService {
                 }
 
                 // If a connection was accepted
-                if (socket != null) {
-                    synchronized(this@BluetoothChatService) {
-                        when (mState) {
-                            STATE_LISTEN, STATE_CONNECTING -> {
-                                // Situation normal. Start the connected thread.
-                                socketConnectionType = socket.connectionType
-                                connected(
-                                    socket, socket.remoteDevice,
-                                    mSocketType
-                                )
+                synchronized(this@BluetoothChatService) {
+                    when (mState) {
+                        STATE_LISTEN, STATE_CONNECTING -> {
+                            // Situation normal. Start the connected thread.
+                            socketConnectionType = socket.connectionType
+                            connected(
+                                socket, socket.remoteDevice,
+                                mSocketType
+                            )
+                        }
+                        STATE_NONE, STATE_CONNECTED ->                             // Either not ready or already connected. Terminate new socket.
+                            try {
+                                socket.close()
+                            } catch (e: IOException) {
+                                Log.e(TAG, "Could not close unwanted socket", e)
                             }
-                            STATE_NONE, STATE_CONNECTED ->                             // Either not ready or already connected. Terminate new socket.
-                                try {
-                                    socket.close()
-                                } catch (e: IOException) {
-                                    Log.e(TAG, "Could not close unwanted socket", e)
-                                }
-                            else -> {
-                                Log.e(TAG, "unknown state")
-                            }
+                        else -> {
+                            Log.e(TAG, "unknown state")
                         }
                     }
-                } else {
-                    Log.i(TAG, "Got null socket")
                 }
             }
             if (D) {
@@ -394,7 +386,6 @@ class BluetoothChatService {
         }
 
         init {
-            var tmp: BluetoothServerSocket? = null
             mSocketType = if (secure) "Secure" else "Insecure"
 
             // Create a new listening server socket

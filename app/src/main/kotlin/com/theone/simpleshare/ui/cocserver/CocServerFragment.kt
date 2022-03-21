@@ -19,7 +19,6 @@ import com.theone.simpleshare.databinding.FragmentCocServerBinding
 class CocServerFragment : Fragment() {
     private lateinit var cocServerViewModel: CocServerViewModel
     private lateinit var binding: FragmentCocServerBinding
-    private lateinit var mIntent: Intent
     private lateinit var mContext: Context
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,10 +34,11 @@ class CocServerFragment : Fragment() {
             textView.text = s
         }
         binding.button.setOnClickListener {
-            mIntent = Intent(mContext, BleCocServerService::class.java)
-            mIntent.action = BleCocServerService.BLE_ACTION_COC_SERVER_INSECURE
-            Toast.makeText(mContext, "start coc insecure server", Toast.LENGTH_LONG).show()
-            mContext.startService(mIntent)
+            Intent(mContext, BleCocServerService::class.java).apply {
+                action = BleCocServerService.BLE_ACTION_COC_SERVER_INSECURE
+                Toast.makeText(mContext, "start coc insecure server", Toast.LENGTH_LONG).show()
+                mContext.startService(this)
+            }
         }
         return root
     }
@@ -56,24 +56,23 @@ class CocServerFragment : Fragment() {
         mContext.unregisterReceiver(mBroadcast)
     }
 
-    fun registerServerBroadcastReceiver() {
-        val filter = IntentFilter()
-        filter.addAction(BleCocServerService.BLE_LE_CONNECTED)
-        filter.addAction(BleCocServerService.BLE_COC_LISTENER_CREATED)
-        filter.addAction(BleCocServerService.BLE_PSM_READ)
-        filter.addAction(BleCocServerService.BLE_COC_CONNECTED)
-        filter.addAction(BleCocServerService.BLE_CONNECTION_TYPE_CHECKED)
-        filter.addAction(BleCocServerService.BLE_DATA_8BYTES_READ)
-        filter.addAction(BleCocServerService.BLE_DATA_8BYTES_SENT)
-        filter.addAction(BleCocServerService.BLE_DATA_LARGEBUF_READ)
-        filter.addAction(BleCocServerService.BLE_BLUETOOTH_MISMATCH_SECURE)
-        filter.addAction(BleCocServerService.BLE_BLUETOOTH_MISMATCH_INSECURE)
-        filter.addAction(BleCocServerService.BLE_SERVER_DISCONNECTED)
-        filter.addAction(BleCocServerService.BLE_BLUETOOTH_DISABLED)
-        filter.addAction(BleCocServerService.BLE_OPEN_FAIL)
-        filter.addAction(BleCocServerService.BLE_ADVERTISE_UNSUPPORTED)
-        filter.addAction(BleCocServerService.BLE_ADD_SERVICE_FAIL)
-        mContext.registerReceiver(mBroadcast, filter)
+    fun registerServerBroadcastReceiver() = IntentFilter().apply {
+        addAction(BleCocServerService.BLE_LE_CONNECTED)
+        addAction(BleCocServerService.BLE_COC_LISTENER_CREATED)
+        addAction(BleCocServerService.BLE_PSM_READ)
+        addAction(BleCocServerService.BLE_COC_CONNECTED)
+        addAction(BleCocServerService.BLE_CONNECTION_TYPE_CHECKED)
+        addAction(BleCocServerService.BLE_DATA_8BYTES_READ)
+        addAction(BleCocServerService.BLE_DATA_8BYTES_SENT)
+        addAction(BleCocServerService.BLE_DATA_LARGEBUF_READ)
+        addAction(BleCocServerService.BLE_BLUETOOTH_MISMATCH_SECURE)
+        addAction(BleCocServerService.BLE_BLUETOOTH_MISMATCH_INSECURE)
+        addAction(BleCocServerService.BLE_SERVER_DISCONNECTED)
+        addAction(BleCocServerService.BLE_BLUETOOTH_DISABLED)
+        addAction(BleCocServerService.BLE_OPEN_FAIL)
+        addAction(BleCocServerService.BLE_ADVERTISE_UNSUPPORTED)
+        addAction(BleCocServerService.BLE_ADD_SERVICE_FAIL)
+        mContext.registerReceiver(mBroadcast, this)
     }
 
     private val mBroadcast: BroadcastReceiver = object : BroadcastReceiver() {

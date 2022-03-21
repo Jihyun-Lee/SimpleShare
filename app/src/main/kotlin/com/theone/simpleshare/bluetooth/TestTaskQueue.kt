@@ -16,46 +16,7 @@
 package com.theone.simpleshare.bluetooth
 
 import kotlin.jvm.Synchronized
-import android.bluetooth.BluetoothDevice
-import com.theone.simpleshare.bluetooth.BluetoothUtils
-import android.bluetooth.BluetoothClass
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.le.BluetoothLeScanner
-import com.theone.simpleshare.bluetooth.BluetoothChatService
-import com.theone.simpleshare.bluetooth.TestTaskQueue
-import com.theone.simpleshare.bluetooth.BatteryLevelReader
-import android.content.Intent
-import com.theone.simpleshare.bluetooth.BatteryLevelReader.GattBatteryCallbacks
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattService
-import android.bluetooth.BluetoothGattCallback
-import android.widget.Toast
-import android.content.IntentFilter
-import com.theone.simpleshare.bluetooth.BleCocClientService
-import android.bluetooth.le.ScanCallback
-import com.theone.simpleshare.bluetooth.BleCocServerService
-import android.bluetooth.BluetoothSocket
-import android.bluetooth.le.ScanFilter
-import android.bluetooth.le.ScanSettings
-import android.content.BroadcastReceiver
-import android.bluetooth.BluetoothGattServer
-import android.bluetooth.le.BluetoothLeAdvertiser
-import android.bluetooth.BluetoothServerSocket
-import android.bluetooth.BluetoothGattDescriptor
-import android.bluetooth.BluetoothGattServerCallback
-import android.bluetooth.le.AdvertiseData
-import android.bluetooth.le.AdvertiseSettings
-import android.bluetooth.le.AdvertiseCallback
-import com.theone.simpleshare.bluetooth.BluetoothChatService.AcceptThread
-import com.theone.simpleshare.bluetooth.BluetoothChatService.ConnectThread
-import com.theone.simpleshare.bluetooth.BluetoothChatService.ConnectedThread
-import com.theone.simpleshare.bluetooth.BluetoothPairingService
-import android.annotation.SuppressLint
-import android.bluetooth.BluetoothProfile.ServiceListener
-import android.bluetooth.BluetoothA2dp
+
 import android.os.*
 import java.util.ArrayList
 

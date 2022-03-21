@@ -139,7 +139,7 @@ class PairedFragment : Fragment() {
                     itemViewModel.list.value?.add(
                         Item(
                             R.drawable.ic_launcher_foreground, device!!.name,
-                            device!!.address, device, connectionState, battLevel
+                            device.address, device, connectionState, battLevel
                         )
                     )
                     mRecyclerAdapter.notifyItemInserted(

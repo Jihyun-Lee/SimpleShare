@@ -12,7 +12,7 @@ import com.theone.simpleshare.viewmodel.Item
 import java.util.ArrayList
 
 class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
-    private var mItemList: ArrayList<Item>? = null
+    private lateinit var mItemList: ArrayList<Item>
     var mContext: Context? = null
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view: View = LayoutInflater.from(parent.context)
@@ -22,16 +22,18 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.onBind(mItemList!![position])
+        holder.onBind(mItemList[position])
     }
 
 
     override fun getItemCount(): Int {
-        return mItemList!!.size
+        return mItemList.size
     }
 
     fun setItemList(list: ArrayList<Item>?) {
-        mItemList = list
+        if (list != null) {
+            mItemList = list
+        }
         notifyDataSetChanged()
     }
 
@@ -39,13 +41,13 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
         fun onItemClick(v: View?, pos: Int, item: Item)
     }
 
-    private var mListener: OnItemClickListener? = null
-    fun setOnItemClickListener(listener: OnItemClickListener?) {
+    private lateinit var mListener: OnItemClickListener
+    fun setOnItemClickListener(listener: OnItemClickListener) {
         mListener = listener
     }
 
     fun clear() {
-        mItemList!!.clear()
+        mItemList.clear()
         notifyDataSetChanged()
     }
 
@@ -66,7 +68,7 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
             itemView.setOnClickListener { view ->
                 val pos: Int = adapterPosition
                 if (pos != RecyclerView.NO_POSITION) {
-                    mListener!!.onItemClick(view, pos, mItemList!![pos])
+                    mListener.onItemClick(view, pos, mItemList[pos])
                 }
             }
         }
