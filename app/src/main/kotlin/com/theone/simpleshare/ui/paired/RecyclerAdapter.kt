@@ -8,10 +8,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.theone.simpleshare.R
+import com.theone.simpleshare.viewmodel.Item
 import java.util.ArrayList
 
 class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
-    private lateinit var mItemList: ArrayList<PairedItem>
+    private lateinit var mItemList: ArrayList<Item>
     private lateinit var mListener: OnItemClickListener
     private lateinit var mContext: Context
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -25,14 +26,14 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
         holder.onBind(mItemList!![position])
     }
 
-    fun setItemList(list: ArrayList<PairedItem>?) {
+    fun setItemList(list: ArrayList<Item>?) {
         if (list != null) {
             mItemList = list
         }
         notifyDataSetChanged()
     }
 
-    fun getItemFromList(position: Int): PairedItem = mItemList[position]
+    fun getItemFromList(position: Int): Item = mItemList[position]
 
     fun removeItemFromList(position: Int) {
         mItemList!!.removeAt(position)
@@ -41,7 +42,7 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
     }
 
     interface OnItemClickListener {
-        fun onItemClick(v: View?, pos: Int, item: PairedItem)
+        fun onItemClick(v: View?, pos: Int, item: Item)
     }
 
     fun setOnItemClickListener(listener: OnItemClickListener) {
@@ -59,7 +60,7 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
         var address: TextView
         var state: TextView
         var batteryLevel: TextView
-        fun onBind(item: PairedItem) {
+        fun onBind(item: Item) {
             profile.setImageResource(item.resourceId)
             name.text=item.name
             address.text=item.address

@@ -21,11 +21,11 @@ import com.theone.simpleshare.R
 import com.theone.simpleshare.bluetooth.BatteryLevelReader
 import com.theone.simpleshare.bluetooth.BluetoothPairingService
 import com.theone.simpleshare.databinding.FragmentPairedBinding
-
-import java.util.ArrayList
+import com.theone.simpleshare.viewmodel.Item
+import com.theone.simpleshare.viewmodel.ItemViewModel
 
 class PairedFragment : Fragment() {
-    private lateinit var pairedViewModel: PairedViewModel
+    private lateinit var itemViewModel: ItemViewModel
     private lateinit var binding: FragmentPairedBinding
     private lateinit var mContext: Context
     private lateinit var mRecyclerView: RecyclerView
@@ -35,15 +35,15 @@ class PairedFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        pairedViewModel = ViewModelProvider(this).get(PairedViewModel::class.java)
+        itemViewModel = ViewModelProvider(this).get(ItemViewModel::class.java)
         binding = FragmentPairedBinding.inflate(inflater, container, false)
         val root: View = binding.root
         mContext = activity as Context
-        pairedViewModel.text.observe(getViewLifecycleOwner()){
+        itemViewModel.text.observe(getViewLifecycleOwner()){
             s->
                 //textView.setText(s);
         }
-        pairedViewModel.list
+        itemViewModel.list
             .observe(getViewLifecycleOwner()){ it->
                 Log.d(TAG, "onChanged")
                 mRecyclerAdapter.notifyDataSetChanged()
@@ -64,7 +64,7 @@ class PairedFragment : Fragment() {
         mRecyclerView.setAdapter(mRecyclerAdapter)
 
         mRecyclerAdapter.setOnItemClickListener(object : RecyclerAdapter.OnItemClickListener{
-            override fun onItemClick(v: View?, pos: Int, item: PairedItem) {
+            override fun onItemClick(v: View?, pos: Int, item: Item) {
                 Toast.makeText(mContext, " pos : " + pos + " name : " + item.name, Toast.LENGTH_SHORT).show()
                 Log.d(TAG, " pos : " + pos + " name : " + item.name)
                 val intent = Intent(mContext, BatteryLevelReader::class.java)
@@ -74,7 +74,7 @@ class PairedFragment : Fragment() {
             }
         })
 
-        mRecyclerAdapter.setItemList(pairedViewModel.list.value)
+        mRecyclerAdapter.setItemList(itemViewModel.list.value)
         mSwipeController = SwipeController(object : SwipeControllerActions() {
             override fun onRightClicked(position: Int) {
                 //Todo: remove bond
@@ -153,14 +153,14 @@ class PairedFragment : Fragment() {
                         BatteryLevelReader.Companion.CONNECTION_STATE,
                         BatteryLevelReader.Companion.NO_CONNECTION_INFO
                     )
-                    pairedViewModel.list.value?.add(
-                        PairedItem(
+                    itemViewModel.list.value?.add(
+                        Item(
                             R.drawable.ic_launcher_foreground, device!!.name,
                             device!!.address, device, connectionState, battLevel
                         )
                     )
                     mRecyclerAdapter.notifyItemInserted(
-                        pairedViewModel.list.value!!.size - 1
+                        itemViewModel.list.value!!.size - 1
                     )
                 }
                 else -> Log.e(TAG, "onReceive: Error: unhandled action=$action")

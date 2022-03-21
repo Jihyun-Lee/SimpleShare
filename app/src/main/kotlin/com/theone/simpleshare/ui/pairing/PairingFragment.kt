@@ -22,10 +22,12 @@ import com.theone.simpleshare.bluetooth.BluetoothPairingService
 import com.theone.simpleshare.bluetooth.BluetoothUtils.isA2dpDevice
 import com.theone.simpleshare.bluetooth.BluetoothUtils.isInputDevice
 import com.theone.simpleshare.databinding.FragmentPairingBinding
+import com.theone.simpleshare.viewmodel.Item
+import com.theone.simpleshare.viewmodel.ItemViewModel
 import java.util.ArrayList
 
 class PairingFragment : Fragment() {
-    private lateinit var pairingViewModel: PairingViewModel
+    private lateinit var itemViewModel: ItemViewModel
     private lateinit var binding: FragmentPairingBinding
     private lateinit var mContext: Context
     private lateinit var mRecyclerView: RecyclerView
@@ -43,13 +45,13 @@ class PairingFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        pairingViewModel = ViewModelProvider(this).get(PairingViewModel::class.java)
+        itemViewModel = ViewModelProvider(this).get(ItemViewModel::class.java)
         binding = FragmentPairingBinding.inflate(inflater, container, false)
         val root: View = binding.root
         mContext = activity as Context
-        pairingViewModel.list
+        itemViewModel.list
             .observe(getViewLifecycleOwner()){
-                items: ArrayList<Item>->
+                items: ArrayList<Item> ->
                     //Log.d(TAG, "onChanged")
             }
 
@@ -69,7 +71,7 @@ class PairingFragment : Fragment() {
                     mContext.startService(intent)
                 }
             })
-        mRecyclerAdapter.setItemList(pairingViewModel.list.value)
+        mRecyclerAdapter.setItemList(itemViewModel.list.value)
         binding.manualPairing.setOnClickListener {
             val intent = Intent(mContext, BluetoothPairingService::class.java)
             intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN)
@@ -101,12 +103,12 @@ class PairingFragment : Fragment() {
         /*refresh rv*/
         mRecyclerAdapter.clear()
         for (device in bluetoothAdapter.getBondedDevices()) {
-            pairingViewModel.list.value?.add(
+            itemViewModel.list.value?.add(
                 Item(
                     R.drawable.ic_launcher_foreground, device.getName(),
-                    device.getAddress(), device
-                )
+                    device.getAddress(), device, -1,-1)
             )
+
         }
     }
 
@@ -124,14 +126,14 @@ class PairingFragment : Fragment() {
                     device?.let { device ->
                         if (isA2dpDevice(device) || isInputDevice(device)) {
                             Log.d(TAG, "device : " + device.getName())
-                            pairingViewModel.list.value?.add(
+                            itemViewModel.list.value?.add(
                                 Item(
                                     R.drawable.ic_launcher_foreground, device.getName(),
-                                    device.getAddress(), device
+                                    device.getAddress(), device, -1,-1
                                 )
                             )
                             mRecyclerAdapter.notifyItemInserted(
-                                pairingViewModel.list.value!!.size
+                                itemViewModel.list.value!!.size
                             )
                             if (mPairingMode == ParingMode.AUTO_PAIRING_MODE) {
                                 Toast.makeText(

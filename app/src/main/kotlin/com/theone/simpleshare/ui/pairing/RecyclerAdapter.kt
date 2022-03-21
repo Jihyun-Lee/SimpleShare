@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.theone.simpleshare.R
+import com.theone.simpleshare.viewmodel.Item
 import java.util.ArrayList
 
 class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
@@ -51,17 +52,17 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
     open inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var profile: ImageView
         var name: TextView
-        var message: TextView
+        var address: TextView
         fun onBind(item: Item) {
             profile.setImageResource(item.resourceId)
             name.text = item.name
-            message.text = item.message
+            address.text = item.address
         }
 
         init {
             profile = itemView.findViewById(R.id.profile)
             name = itemView.findViewById<TextView>(R.id.name)
-            message = itemView.findViewById<TextView>(R.id.address)
+            address = itemView.findViewById<TextView>(R.id.address)
             itemView.setOnClickListener { view ->
                 val pos: Int = adapterPosition
                 if (pos != RecyclerView.NO_POSITION) {
