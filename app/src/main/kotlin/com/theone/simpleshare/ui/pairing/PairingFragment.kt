@@ -77,7 +77,8 @@ class PairingFragment : Fragment() {
             mPairingMode = ParingMode.MANUAL_PAIRING_MODE
             mContext.startService(intent)
 
-            /*refresh rv*/mRecyclerAdapter!!.clear()
+            /*refresh rv*/
+            mRecyclerAdapter!!.clear()
         }
         binding!!.autoPairing.setOnClickListener {
             val intent = Intent(mContext, BluetoothPairingService::class.java)
@@ -85,7 +86,8 @@ class PairingFragment : Fragment() {
             Toast.makeText(mContext, "start auto pairing", Toast.LENGTH_LONG).show()
             mPairingMode = ParingMode.AUTO_PAIRING_MODE
             mContext.startService(intent)
-            /*refresh rv*/mRecyclerAdapter!!.clear()
+            /*refresh rv*/
+            mRecyclerAdapter!!.clear()
         }
         binding.bondedDevice.setOnClickListener { drawBondedDevices() }
         return root
@@ -96,7 +98,8 @@ class PairingFragment : Fragment() {
             mContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val bluetoothAdapter: BluetoothAdapter = bluetoothManager.getAdapter()
 
-        /*refresh rv*/mRecyclerAdapter!!.clear()
+        /*refresh rv*/
+        mRecyclerAdapter.clear()
         for (device in bluetoothAdapter.getBondedDevices()) {
             pairingViewModel.list.value?.add(
                 Item(
@@ -117,8 +120,8 @@ class PairingFragment : Fragment() {
                 BluetoothDevice.ACTION_FOUND -> {
                     val device: BluetoothDevice? =
                         intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-                    if (device != null) {
-                        /*Deal with HID and A2DP device*/
+
+                    device?.let { device ->
                         if (isA2dpDevice(device) || isInputDevice(device)) {
                             Log.d(TAG, "device : " + device.getName())
                             pairingViewModel.list.value?.add(
@@ -142,20 +145,7 @@ class PairingFragment : Fragment() {
                                 i.putExtra(BluetoothDevice.EXTRA_DEVICE, device)
                                 mContext.startService(i)
                             }
-                        } else {
-                            if (device.getName() != null) {
-                                pairingViewModel.list.value?.add(
-                                    Item(
-                                        R.drawable.ic_launcher_foreground, device.getName(),
-                                        device.getAddress(), device
-                                    )
-                                )
-                                mRecyclerAdapter.notifyItemInserted(
-                                    pairingViewModel.list.value!!.size
-                                )
-                            } else {
-                                Log.w(TAG, "empty device name")
-                            }
+
                         }
                     }
                 }
@@ -181,7 +171,6 @@ class PairingFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-
         mContext.unregisterReceiver(mBroadcast)
     }
 

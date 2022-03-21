@@ -21,7 +21,7 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
     private var swipeBack = false
     private var buttonShowedState = ButtonsState.GONE
     private lateinit var buttonInstance: RectF
-    private lateinit var currentItemViewHolder: RecyclerView.ViewHolder
+    private var currentItemViewHolder: RecyclerView.ViewHolder? = null
     private lateinit var buttonsActions: SwipeControllerActions
     override fun getMovementFlags(
         recyclerView: RecyclerView,
@@ -185,7 +185,6 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
                         }
                     }
                     buttonShowedState = ButtonsState.GONE
-                    //currentItemViewHolder = null
                 }
                 return false
             }
@@ -203,7 +202,7 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
         val corners = 16f
         val itemView: View = viewHolder.itemView
         val p = Paint()
-        //buttonInstance = null
+
         if (buttonShowedState == ButtonsState.LEFT_VISIBLE) {
             val leftButton = RectF(
                 itemView.left.toFloat(), itemView.top.toFloat(),
@@ -235,9 +234,7 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
     }
 
     fun onDraw(c: Canvas) {
-        if (currentItemViewHolder != null) {
-            drawButtons(c, currentItemViewHolder)
-        }
+        currentItemViewHolder?.let { drawButtons(c, it) }
     }
 
     companion object {
@@ -246,6 +243,8 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
     }
 
     init {
-        this.buttonsActions = buttonsActions!!
+        if (buttonsActions != null) {
+            this.buttonsActions = buttonsActions
+        }
     }
 }

@@ -49,7 +49,7 @@ class BluetoothPairingService : Service() {
     private lateinit var mBluetoothManager: BluetoothManager
     private lateinit var mBluetoothAdapter: BluetoothAdapter
     private lateinit var mDevice: BluetoothDevice
-    private lateinit var mBluetoothGatt: BluetoothGatt
+    private var mBluetoothGatt: BluetoothGatt? = null
     private lateinit var mScanner: BluetoothLeScanner
     private lateinit var mHandler: Handler
     private var mSecure = false
@@ -198,9 +198,9 @@ class BluetoothPairingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.disconnect()
-            mBluetoothGatt.close()
+        mBluetoothGatt?.apply {
+            disconnect()
+            close()
         }
         stopDiscovery()
         unregisterReceiver(mBondStatusReceiver)
@@ -271,8 +271,8 @@ class BluetoothPairingService : Service() {
     private val service: BluetoothGattService?
         private get() {
             var service: BluetoothGattService? = null
-            if (mBluetoothGatt != null) {
-                service = mBluetoothGatt.getService(SERVICE_UUID)
+            mBluetoothGatt?.apply {
+                service = getService(SERVICE_UUID)
                 if (service == null) {
                     showMessage("GATT Service not found")
                 }
@@ -310,7 +310,7 @@ class BluetoothPairingService : Service() {
                     val bondState = gatt.device.bondState
                     var bonded = false
                     val target = gatt.device
-                    val pairedDevices = mBluetoothAdapter!!.bondedDevices
+                    val pairedDevices = mBluetoothAdapter.bondedDevices
                     if (!pairedDevices.isEmpty()) {
                         for (device in pairedDevices) {
                             if (device.address == target.address) {
@@ -325,7 +325,7 @@ class BluetoothPairingService : Service() {
                             TAG, "BluetoothGattCallback.onConnectionStateChange: "
                                     + "Not paired but execute secure test"
                         )
-                        mBluetoothGatt.disconnect()
+                        mBluetoothGatt?.disconnect()
                         notifyMismatchSecure()
                     } else if (!mSecure && (bondState != BluetoothDevice.BOND_NONE || bonded)) {
                         // already pairing and execute Insecure Test
@@ -333,7 +333,7 @@ class BluetoothPairingService : Service() {
                             TAG, "BluetoothGattCallback.onConnectionStateChange: "
                                     + "Paired but execute insecure test"
                         )
-                        mBluetoothGatt.disconnect()
+                        mBluetoothGatt?.disconnect()
                         notifyMismatchInsecure()
                     } else {
                         notifyConnected()
@@ -341,12 +341,12 @@ class BluetoothPairingService : Service() {
                 } else if (status == BluetoothProfile.STATE_DISCONNECTED) {
                     mBleState = newState
                     mSecure = false
-                    mBluetoothGatt.close()
+                    mBluetoothGatt?.close()
                     notifyDisconnected()
                 }
             } else {
                 showMessage("Failed to connect: $status , newState = $newState")
-                mBluetoothGatt.close()
+                mBluetoothGatt?.close()
             }
         }
 
@@ -355,7 +355,7 @@ class BluetoothPairingService : Service() {
                 Log.d(TAG, "onServicesDiscovered: status=$status")
             }
             if (status == BluetoothGatt.GATT_SUCCESS &&
-                mBluetoothGatt.getService(SERVICE_UUID) != null
+                mBluetoothGatt?.getService(SERVICE_UUID) != null
             ) {
                 notifyServicesDiscovered()
             }

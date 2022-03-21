@@ -125,6 +125,12 @@ class BatteryLevelReader : Service() {
                             } else {
                                 if (mDevice!!.type == BluetoothDevice.DEVICE_TYPE_CLASSIC) {
                                     Log.e(TAG, "DEVICE_TYPE_CLASSIC device..")
+                                    val intent = Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE)
+                                    intent.apply {
+                                        putExtra(BluetoothDevice.EXTRA_DEVICE, mDevice)
+                                        putExtra(BATTERY_LEVEL, NO_BATTTERY_INFO)
+                                        sendBroadcast(this)
+                                    }
                                 } else {
                                     Log.e(TAG, "~~~~~~~~error")
                                     Log.e(TAG, "mDevice.getName() : " + mDevice!!.name)
@@ -370,10 +376,12 @@ class BatteryLevelReader : Service() {
                 }
                 Log.d(TAG, "send device and battery level")
                 val intent = Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE)
-                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, mDevice)
-                intent.putExtra(BATTERY_LEVEL, NO_BATTTERY_INFO)
-                //intent.putExtra(CONNECTION_STATE, getConnectionState(mDevice));
-                sendBroadcast(intent)
+                intent.apply {
+                    putExtra(BluetoothDevice.EXTRA_DEVICE, mDevice)
+                    putExtra(BATTERY_LEVEL, NO_BATTTERY_INFO)
+                    sendBroadcast(this)
+                }
+
                 return
             }
             gatt.readCharacteristic(battLevel)

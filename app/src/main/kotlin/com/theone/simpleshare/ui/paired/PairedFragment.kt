@@ -37,7 +37,7 @@ class PairedFragment : Fragment() {
     ): View {
         pairedViewModel = ViewModelProvider(this).get(PairedViewModel::class.java)
         binding = FragmentPairedBinding.inflate(inflater, container, false)
-        val root: View = binding!!.root
+        val root: View = binding.root
         mContext = activity as Context
         pairedViewModel.text.observe(getViewLifecycleOwner()){
             s->
@@ -49,10 +49,13 @@ class PairedFragment : Fragment() {
                 mRecyclerAdapter.notifyDataSetChanged()
             }
         setupRecyclerView()
-        bondedDevicesIntent
+        bondedDevicesIntent()
         return root
     }
 
+    companion object {
+        private const val TAG = "PairedFragment"
+    }
     private fun setupRecyclerView() {
         mRecyclerAdapter = RecyclerAdapter()
         mRecyclerView = binding.recyclerView
@@ -71,7 +74,7 @@ class PairedFragment : Fragment() {
             }
         })
 
-        mRecyclerAdapter!!.setItemList(pairedViewModel.list.value)
+        mRecyclerAdapter.setItemList(pairedViewModel.list.value)
         mSwipeController = SwipeController(object : SwipeControllerActions() {
             override fun onRightClicked(position: Int) {
                 //Todo: remove bond
@@ -79,14 +82,13 @@ class PairedFragment : Fragment() {
                     .show()
                 val intent = Intent(mContext, BluetoothPairingService::class.java)
                 intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_REMOVE_BOND)
-                val item = mRecyclerAdapter!!.getItemFromList(position)
+                val item = mRecyclerAdapter.getItemFromList(position)
                 intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
-                mContext!!.startService(intent)
-                mRecyclerAdapter!!.removeItemFromList(position)
+                mContext.startService(intent)
+                mRecyclerAdapter.removeItemFromList(position)
             }
 
             override fun onLeftClicked(position: Int) {
-                //Todo: edit
                 Toast.makeText(getActivity(), "onLeftClicked : $position", Toast.LENGTH_SHORT)
                     .show()
             }
@@ -122,36 +124,17 @@ class PairedFragment : Fragment() {
 
 
         */
-    private val bondedDevicesIntent: Unit
-        private get() {
+    private fun bondedDevicesIntent (){
             /*refresh rv*/
-            mRecyclerAdapter!!.clear()
+            mRecyclerAdapter.clear()
+
             val intent = Intent(mContext, BatteryLevelReader::class.java)
-            intent.setAction(BatteryLevelReader.BLUETOOTH_ACTION_GET_BONDED_DEVICES)
-            mContext!!.startService(intent)
-
-            /*
-        BluetoothManager bluetoothManager = (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
-
-        mRecyclerAdapter.clear();
-        Set<BluetoothDevice> devSet =  bluetoothAdapter.getBondedDevices();
-        if( devSet.size() != 0) {
-            for (BluetoothDevice device : devSet) {
-                pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
-                        device.getAddress(), device));
-
+            intent.apply {
+                setAction(BatteryLevelReader.BLUETOOTH_ACTION_GET_BONDED_DEVICES)
+                mContext.startService(this)
             }
-        } else {
-            //add dummy item
-            pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, "empty",
-                          "empty", null));
 
-        }
-
-
-         */
-        }
+    }
     private val mBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action: String? = intent.action
@@ -170,7 +153,7 @@ class PairedFragment : Fragment() {
                         BatteryLevelReader.Companion.CONNECTION_STATE,
                         BatteryLevelReader.Companion.NO_CONNECTION_INFO
                     )
-                    pairedViewModel.list.value!!.add(
+                    pairedViewModel.list.value?.add(
                         PairedItem(
                             R.drawable.ic_launcher_foreground, device!!.name,
                             device!!.address, device, connectionState, battLevel
@@ -205,7 +188,4 @@ class PairedFragment : Fragment() {
         mContext.unregisterReceiver(mBroadcast)
     }
 
-    companion object {
-        private const val TAG = "PairedFragment"
-    }
 }
