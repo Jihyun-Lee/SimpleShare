@@ -49,7 +49,7 @@ class BluetoothPairingService : Service() {
     private lateinit var mBluetoothManager: BluetoothManager
     private lateinit var mBluetoothAdapter: BluetoothAdapter
     private lateinit var mDevice: BluetoothDevice
-    private var mBluetoothGatt: BluetoothGatt? = null
+    private lateinit var mBluetoothGatt: BluetoothGatt
     private lateinit var mScanner: BluetoothLeScanner
     private lateinit var mHandler: Handler
     private var mSecure = false
@@ -64,7 +64,7 @@ class BluetoothPairingService : Service() {
     private lateinit var mNextWriteCompletionIntent: String
 
     // Handler for communicating task with peer.
-    private var mTaskQueue: TestTaskQueue? = null
+    private lateinit var mTaskQueue: TestTaskQueue
     override fun onCreate() {
         super.onCreate()
         val filter = IntentFilter()
@@ -74,32 +74,28 @@ class BluetoothPairingService : Service() {
         mBluetoothAdapter = mBluetoothManager.adapter
         mScanner = mBluetoothAdapter.bluetoothLeScanner
         mTaskQueue = TestTaskQueue(javaClass.name + "_taskHandlerThread")
-        mHandler = object : Handler() {
+        mHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(m: Message) {
                 when (m.what) {
                     MSG_CONNECT_TIMEOUT -> {}
                     MSG_CONNECT -> {
-                        if (mA2dpProfile == null) {
-                            return
-                            //break
-                        }
                         Log.d(TAG, "try to connect")
                         a2dpConnect(mDevice)
-                        mHandler!!.postDelayed({
-                            if (BluetoothProfile.STATE_CONNECTED == mA2dpProfile!!.getConnectionState(
+                        mHandler.postDelayed({
+                            if (BluetoothProfile.STATE_CONNECTED == mA2dpProfile.getConnectionState(
                                     mDevice
                                 )
                             ) {
-                                Log.d(TAG, mDevice!!.name + " connected")
+                                Log.d(TAG, mDevice.name + " connected")
                                 Toast.makeText(
                                     this@BluetoothPairingService,
-                                    mDevice!!.name + " connected",
+                                    mDevice.name + " connected",
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 //todo : display battery and state in rv
                             } else {
-                                Log.d(TAG, mDevice!!.name + " not connected")
-                                notifyError(mDevice!!.name + " not connected")
+                                Log.d(TAG, mDevice.name + " not connected")
+                                notifyError(mDevice.name + " not connected")
                             }
                         }, 2000)
                     }
@@ -120,17 +116,6 @@ class BluetoothPairingService : Service() {
         }
     }
 
-    /*
-    private void hidHostConnect(BluetoothDevice device) {
-        Log.d(TAG,"connect");
-        try{
-            Method connect = Class.forName("android.bluetooth.BluetoothHidHost").getMethod("connect", BluetoothDevice.class);
-            connect.invoke(mInputProxy, device);
-        }catch(Exception e){
-            Log.d(TAG, e.toString());
-        }
-    }
-    */
     private fun removeBond(device: BluetoothDevice) {
         Log.d(TAG, "removeBond")
         try {
@@ -145,51 +130,50 @@ class BluetoothPairingService : Service() {
         if (!mBluetoothAdapter.isEnabled) {
             notifyBluetoothDisabled()
         } else {
-            mTaskQueue!!.addTask({ onTestFinish(intent) }, EXECUTION_DELAY.toLong())
+            mTaskQueue.addTask({ onTestFinish(intent) }, EXECUTION_DELAY.toLong())
         }
         return START_NOT_STICKY
     }
 
     private fun onTestFinish(intent: Intent) {
-        mCurrentAction = intent.action!!
+        mCurrentAction = intent.action.toString()
         Log.d(TAG, "onTestFinish action : $mCurrentAction")
-        if (mCurrentAction != null) {
-            when (mCurrentAction) {
-                BLUETOOTH_ACTION_START_SCAN -> {
-                    if (mBluetoothAdapter!!.isDiscovering) {
-                        Log.d(TAG, "stop scan")
-                        stopDiscovery()
-                    }
-                    startDiscovery()
-                }
-                BLUETOOTH_ACTION_START_PAIRING -> {
-                    val device =
-                        intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+        when (mCurrentAction) {
+            BLUETOOTH_ACTION_START_SCAN -> {
+                if (mBluetoothAdapter.isDiscovering) {
+                    Log.d(TAG, "stop scan")
                     stopDiscovery()
-                    if (device != null) {
-                        val name = device.name
-                        val address = device.address
-                        Log.d(TAG, "name : $name address : $address")
-                        if (device.bondState != BluetoothDevice.BOND_BONDED) {
-                            if (!device.createBond()) {
-                                notifyError("Failed to call create bond")
-                            }
-                        } else {
-                            notifyError(device.name + " is already paired")
+                }
+                startDiscovery()
+            }
+            BLUETOOTH_ACTION_START_PAIRING -> {
+                val device =
+                    intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                stopDiscovery()
+                if (device != null) {
+                    val name = device.name
+                    val address = device.address
+                    Log.d(TAG, "name : $name address : $address")
+                    if (device.bondState != BluetoothDevice.BOND_BONDED) {
+                        if (!device.createBond()) {
+                            notifyError("Failed to call create bond")
                         }
                     } else {
-                        Log.e(TAG, "ERROR : device is null")
-                        notifyError("Failed to get device from discovery")
+                        notifyError(device.name + " is already paired")
                     }
+                } else {
+                    Log.e(TAG, "ERROR : device is null")
+                    notifyError("Failed to get device from discovery")
                 }
-                BLUETOOTH_ACTION_REMOVE_BOND -> {
-                    val device =
-                        intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-                    device?.let { removeBond(it) }
-                }
-                else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
             }
+            BLUETOOTH_ACTION_REMOVE_BOND -> {
+                val device =
+                    intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                device?.let { removeBond(it) }
+            }
+            else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
         }
+
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -198,21 +182,19 @@ class BluetoothPairingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mBluetoothGatt?.apply {
+        mBluetoothGatt.apply {
             disconnect()
             close()
         }
         stopDiscovery()
         unregisterReceiver(mBondStatusReceiver)
         Log.d(TAG, "BluetoothPairingService onDestroy")
-        mTaskQueue!!.quit()
+        mTaskQueue.quit()
     }
 
     private fun readCharacteristic(uuid: UUID) {
         val characteristic = getCharacteristic(uuid)
-        if (characteristic != null) {
-            mBluetoothGatt!!.readCharacteristic(characteristic)
-        }
+        mBluetoothGatt.readCharacteristic(characteristic)
     }
 
     private fun notifyError(message: String) {
@@ -246,8 +228,8 @@ class BluetoothPairingService : Service() {
 
     private fun startLeDiscovery() {
         // Start Service Discovery
-        if (mBluetoothGatt != null && mBleState == BluetoothProfile.STATE_CONNECTED) {
-            mBluetoothGatt!!.discoverServices()
+        if (mBleState == BluetoothProfile.STATE_CONNECTED) {
+            mBluetoothGatt.discoverServices()
         } else {
             showMessage("Bluetooth LE GATT not connected.")
         }
@@ -269,13 +251,10 @@ class BluetoothPairingService : Service() {
     }
 
     private val service: BluetoothGattService?
-        private get() {
-            var service: BluetoothGattService? = null
-            mBluetoothGatt?.apply {
+        get() {
+            var service: BluetoothGattService
+            mBluetoothGatt.apply {
                 service = getService(SERVICE_UUID)
-                if (service == null) {
-                    showMessage("GATT Service not found")
-                }
             }
             return service
         }
@@ -325,7 +304,7 @@ class BluetoothPairingService : Service() {
                             TAG, "BluetoothGattCallback.onConnectionStateChange: "
                                     + "Not paired but execute secure test"
                         )
-                        mBluetoothGatt?.disconnect()
+                        mBluetoothGatt.disconnect()
                         notifyMismatchSecure()
                     } else if (!mSecure && (bondState != BluetoothDevice.BOND_NONE || bonded)) {
                         // already pairing and execute Insecure Test
@@ -333,7 +312,7 @@ class BluetoothPairingService : Service() {
                             TAG, "BluetoothGattCallback.onConnectionStateChange: "
                                     + "Paired but execute insecure test"
                         )
-                        mBluetoothGatt?.disconnect()
+                        mBluetoothGatt.disconnect()
                         notifyMismatchInsecure()
                     } else {
                         notifyConnected()
@@ -341,12 +320,12 @@ class BluetoothPairingService : Service() {
                 } else if (status == BluetoothProfile.STATE_DISCONNECTED) {
                     mBleState = newState
                     mSecure = false
-                    mBluetoothGatt?.close()
+                    mBluetoothGatt.close()
                     notifyDisconnected()
                 }
             } else {
                 showMessage("Failed to connect: $status , newState = $newState")
-                mBluetoothGatt?.close()
+                mBluetoothGatt.close()
             }
         }
 
@@ -355,7 +334,7 @@ class BluetoothPairingService : Service() {
                 Log.d(TAG, "onServicesDiscovered: status=$status")
             }
             if (status == BluetoothGatt.GATT_SUCCESS &&
-                mBluetoothGatt?.getService(SERVICE_UUID) != null
+                mBluetoothGatt.getService(SERVICE_UUID) != null
             ) {
                 notifyServicesDiscovered()
             }
@@ -370,7 +349,6 @@ class BluetoothPairingService : Service() {
                 Log.d(TAG, "onCharacteristicRead: status=$status, uuid=$uid")
             }
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                val value = characteristic.getStringValue(0)
                 if (characteristic.uuid == LE_PSM_CHARACTERISTIC_UUID) {
                     mPsm = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0)
                     if (DEBUG) {
@@ -395,10 +373,10 @@ class BluetoothPairingService : Service() {
     private val mScanCallback: ScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             Log.d(TAG, "onScanResult")
-            if (mBluetoothGatt == null) {
-                // verify the validity of the advertisement packet.
-                mValidityService = false
-                val uuids = result.scanRecord!!.serviceUuids
+            // verify the validity of the advertisement packet.
+            mValidityService = false
+            val uuids = result.scanRecord?.serviceUuids
+            if (uuids != null) {
                 for (uuid in uuids) {
                     if (uuid.uuid == BleCocServerService.Companion.ADV_COC_SERVICE_UUID) {
                         if (DEBUG) {
@@ -408,38 +386,38 @@ class BluetoothPairingService : Service() {
                         break
                     }
                 }
-                if (mValidityService) {
-                    //stopScan();
-                    stopDiscovery()
-                    val device = result.device
-                    if (DEBUG) {
-                        Log.d(
-                            TAG, "onScanResult: Found ADV with CoC UUID on device="
-                                    + device
-                        )
-                    }
-                    if (mSecure) {
-                        if (device.bondState != BluetoothDevice.BOND_BONDED) {
-                            if (!device.createBond()) {
-                                notifyError("Failed to call create bond")
-                            }
-                        } else {
-                            mDevice = device
-                            mBluetoothGatt = connectGatt(
-                                result.device, this@BluetoothPairingService, false,
-                                mSecure, mGattCallbacks
-                            )
+            }
+            if (mValidityService) {
+                //stopScan();
+                stopDiscovery()
+                val device = result.device
+                if (DEBUG) {
+                    Log.d(
+                        TAG, "onScanResult: Found ADV with CoC UUID on device="
+                                + device
+                    )
+                }
+                if (mSecure) {
+                    if (device.bondState != BluetoothDevice.BOND_BONDED) {
+                        if (!device.createBond()) {
+                            notifyError("Failed to call create bond")
                         }
                     } else {
                         mDevice = device
                         mBluetoothGatt = connectGatt(
-                            result.device, this@BluetoothPairingService, false, mSecure,
-                            mGattCallbacks
+                            result.device, this@BluetoothPairingService, false,
+                            mSecure, mGattCallbacks
                         )
                     }
                 } else {
-                    notifyError("No valid service in Advertisement")
+                    mDevice = device
+                    mBluetoothGatt = connectGatt(
+                        result.device, this@BluetoothPairingService, false, mSecure,
+                        mGattCallbacks
+                    )
                 }
+            } else {
+                notifyError("No valid service in Advertisement")
             }
         }
     }
@@ -508,16 +486,14 @@ class BluetoothPairingService : Service() {
         val len = buffer.size
         showMessage("LE Coc Client wrote $len bytes")
         if (len == mNextWriteExpectedLen) {
-            if (mNextWriteCompletionIntent != null) {
-                val intent = Intent(mNextWriteCompletionIntent)
-                sendBroadcast(intent)
-            }
+            val intent = Intent(mNextWriteCompletionIntent)
+            sendBroadcast(intent)
         } else {
             Log.d(TAG, "handleMessageWrite: unrecognized length=$len")
         }
     }
 
-    private inner class ChatHandler : Handler() {
+    private inner class ChatHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
             if (DEBUG) {
@@ -548,20 +524,12 @@ class BluetoothPairingService : Service() {
         if (DEBUG) {
             Log.d(TAG, "leCocClientConnect: device=$mDevice, mSecure=$mSecure")
         }
-        if (mDevice == null) {
-            Log.e(TAG, "leCocClientConnect: mDevice is null")
-            return
-        }
         // Construct BluetoothChatService with useBle=true parameter
         /* mChatService = new BluetoothChatService(this, new BleCocClientService.ChatHandler(), true);
         mChatService.connect(mDevice, mSecure, mPsm);*/
     }
 
     private fun leCheckConnectionType() {
-        if (mChatService == null) {
-            Log.e(TAG, "leCheckConnectionType: no LE Coc connection")
-            return
-        }
         val type = mChatService.socketConnectionType
         if (type != BluetoothSocket.TYPE_L2CAP) {
             Log.e(TAG, "leCheckConnectionType: invalid connection type=$type")
@@ -595,11 +563,9 @@ class BluetoothPairingService : Service() {
                 )
                 when (state) {
                     BluetoothDevice.BOND_BONDED ->
-                        if (mBluetoothGatt == null) {
-                            if (DEBUG) {
-                                Log.d(TAG, "onReceive:BOND_BONDED: calling connectGatt. device="
-                                    + device + ", mSecure=" + mSecure)
-                        }
+                        if (DEBUG) {
+                            Log.d(TAG, "onReceive:BOND_BONDED: calling connectGatt. device="
+                                + device + ", mSecure=" + mSecure)
 
                         //BD/EDR(A2DP) or BLE device.
                         mDevice = device!!
@@ -611,8 +577,7 @@ class BluetoothPairingService : Service() {
                                 )
                             ) {
                                 Log.d(TAG, "A2DP getProfileProxy failed")
-                                mA2dpProfile = null
-                                //break
+                                return
                             }
                             // regardless of the UUID content, at this point, we're sure we can initiate a
                             // profile connection.
@@ -657,15 +622,12 @@ class BluetoothPairingService : Service() {
             if (DEBUG) {
                 Log.d(TAG, "hid host Connection made to bluetooth proxy.")
             }
-            //todo : notify
-            if (mDevice != null) Toast.makeText(
-                this@BluetoothPairingService,
+            Toast.makeText(this@BluetoothPairingService,
                 mDevice.name + " is connected ",
-                Toast.LENGTH_SHORT
-            ).show()
+                Toast.LENGTH_SHORT).show()
         }
     }
-    private var mA2dpProfile: BluetoothA2dp? = null
+    private lateinit var mA2dpProfile: BluetoothA2dp
     private val mA2dpServiceConnection: ServiceListener = object : ServiceListener {
         override fun onServiceDisconnected(profile: Int) {
             Log.w(TAG, "Service disconnected, perhaps unexpectedly")
@@ -679,7 +641,7 @@ class BluetoothPairingService : Service() {
             if (DEBUG) {
                 Log.d(
                     TAG,
-                    "Connecting to target: " + mDevice!!.address + " name : " + mDevice!!.name
+                    "Connecting to target: " + mDevice.address + " name : " + mDevice.name
                 )
             }
         }

@@ -52,33 +52,33 @@ class BatteryLevelReader : Service() {
 
     // current test category
     private var mCurrentAction: String? = null
-    private var mBluetoothManager: BluetoothManager? = null
-    private var mBluetoothAdapter: BluetoothAdapter? = null
-    private var mDevice: BluetoothDevice? = null
-    private var mBluetoothGatt: BluetoothGatt? = null
-    private var mScanner: BluetoothLeScanner? = null
-    private var mHandler: Handler? = null
+    private lateinit var mBluetoothManager: BluetoothManager
+    private lateinit var mBluetoothAdapter: BluetoothAdapter
+    private lateinit var mDevice: BluetoothDevice
+    private lateinit var mBluetoothGatt: BluetoothGatt
+    private lateinit var mScanner: BluetoothLeScanner
+    private lateinit var mHandler: Handler
     private var mSecure = false
     private val mValidityService = false
     private var mPsm = 0
-    private val mChatService: BluetoothChatService? = null
+    private lateinit var mChatService: BluetoothChatService
     private val mNextReadExpectedLen = -1
-    private val mNextReadCompletionIntent: String? = null
+    private lateinit var mNextReadCompletionIntent: String
     private val mTotalReadLen = 0
     private val mNextReadByte: Byte = 0
     private val mNextWriteExpectedLen = -1
-    private val mNextWriteCompletionIntent: String? = null
+    private lateinit var mNextWriteCompletionIntent: String
 
     // Handler for communicating task with peer.
-    private var mTaskQueue: TestTaskQueue? = null
-    private var mDeviceGatt: BluetoothGatt? = null
+    private lateinit var mTaskQueue: TestTaskQueue
+    private lateinit var mDeviceGatt: BluetoothGatt
     override fun onCreate() {
         super.onCreate()
         mBluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
-        mBluetoothAdapter = mBluetoothManager?.adapter
-        mScanner = mBluetoothAdapter?.getBluetoothLeScanner() as BluetoothLeScanner
+        mBluetoothAdapter = mBluetoothManager.adapter
+        mScanner = mBluetoothAdapter.getBluetoothLeScanner() as BluetoothLeScanner
         mTaskQueue = TestTaskQueue(javaClass.name + "_taskHandlerThread")
-        mHandler = object : Handler() {
+        mHandler = object : Handler(Looper.getMainLooper()) {
             override fun handleMessage(m: Message) {
                 when (m.what) {
                     MSG_CONNECT_TIMEOUT -> {}
@@ -90,10 +90,10 @@ class BatteryLevelReader : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        if (!mBluetoothAdapter!!.isEnabled) {
+        if (!mBluetoothAdapter.isEnabled) {
             notifyBluetoothDisabled()
         } else {
-            mTaskQueue!!.addTask({ onTestFinish(intent) }, EXECUTION_DELAY.toLong())
+            mTaskQueue.addTask({ onTestFinish(intent) }, EXECUTION_DELAY.toLong())
         }
         return START_NOT_STICKY
     }
@@ -111,19 +111,19 @@ class BatteryLevelReader : Service() {
                         for (device in devSet) {
                             mDevice = device
                             if (mDevice != null &&
-                                (mDevice!!.type == BluetoothDevice.DEVICE_TYPE_LE ||
-                                        mDevice!!.type == BluetoothDevice.DEVICE_TYPE_DUAL)
+                                (mDevice.type == BluetoothDevice.DEVICE_TYPE_LE ||
+                                        mDevice.type == BluetoothDevice.DEVICE_TYPE_DUAL)
                             ) {
                                 // Only LE devices support GATT
                                 // Todo : need autoConnect???
-                                Log.d(TAG, "try connectGatt on " + mDevice!!.name)
-                                mDeviceGatt = mDevice!!.connectGatt(
+                                Log.d(TAG, "try connectGatt on " + mDevice.name)
+                                mDeviceGatt = mDevice.connectGatt(
                                     this@BatteryLevelReader,
                                     true,
                                     GattBatteryCallbacks()
                                 )
                             } else {
-                                if (mDevice!!.type == BluetoothDevice.DEVICE_TYPE_CLASSIC) {
+                                if (mDevice.type == BluetoothDevice.DEVICE_TYPE_CLASSIC) {
                                     Log.e(TAG, "DEVICE_TYPE_CLASSIC device..")
                                     val intent = Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE)
                                     intent.apply {
@@ -133,8 +133,8 @@ class BatteryLevelReader : Service() {
                                     }
                                 } else {
                                     Log.e(TAG, "~~~~~~~~error")
-                                    Log.e(TAG, "mDevice.getName() : " + mDevice!!.name)
-                                    Log.e(TAG, "mDevice.getType() : " + mDevice!!.type)
+                                    Log.e(TAG, "mDevice.getName() : " + mDevice.name)
+                                    Log.e(TAG, "mDevice.getType() : " + mDevice.type)
                                 }
                             }
                         }
@@ -151,18 +151,15 @@ class BatteryLevelReader : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt!!.disconnect()
-            mBluetoothGatt!!.close()
-            mBluetoothGatt = null
-        }
-        mTaskQueue!!.quit()
+        mBluetoothGatt.disconnect()
+        mBluetoothGatt.close()
+        mTaskQueue.quit()
     }
 
     private fun readCharacteristic(uuid: UUID) {
         val characteristic = getCharacteristic(uuid)
         if (characteristic != null) {
-            mBluetoothGatt!!.readCharacteristic(characteristic)
+            mBluetoothGatt.readCharacteristic(characteristic)
         }
     }
 
@@ -198,7 +195,7 @@ class BatteryLevelReader : Service() {
     private fun startLeDiscovery() {
         // Start Service Discovery
         if (mBluetoothGatt != null && mBleState == BluetoothProfile.STATE_CONNECTED) {
-            mBluetoothGatt!!.discoverServices()
+            mBluetoothGatt.discoverServices()
         } else {
             showMessage("Bluetooth LE GATT not connected.")
         }
@@ -223,7 +220,7 @@ class BatteryLevelReader : Service() {
         private get() {
             var service: BluetoothGattService? = null
             if (mBluetoothGatt != null) {
-                service = mBluetoothGatt!!.getService(SERVICE_UUID)
+                service = mBluetoothGatt.getService(SERVICE_UUID)
                 if (service == null) {
                     showMessage("GATT Service not found")
                 }
@@ -244,7 +241,7 @@ class BatteryLevelReader : Service() {
     }
 
     private fun showMessage(msg: String) {
-        mHandler!!.post {
+        mHandler.post {
             Log.d(TAG, msg)
             //show toast
         }
@@ -261,7 +258,7 @@ class BatteryLevelReader : Service() {
                     val bondState = gatt.device.bondState
                     var bonded = false
                     val target = gatt.device
-                    val pairedDevices = mBluetoothAdapter!!.bondedDevices
+                    val pairedDevices = mBluetoothAdapter.bondedDevices
                     if (!pairedDevices.isEmpty()) {
                         for (device in pairedDevices) {
                             if (device.address == target.address) {
@@ -276,7 +273,7 @@ class BatteryLevelReader : Service() {
                             TAG, "BluetoothGattCallback.onConnectionStateChange: "
                                     + "Not paired but execute secure test"
                         )
-                        mBluetoothGatt!!.disconnect()
+                        mBluetoothGatt.disconnect()
                         notifyMismatchSecure()
                     } else if (!mSecure && (bondState != BluetoothDevice.BOND_NONE || bonded)) {
                         // already pairing and execute Insecure Test
@@ -284,7 +281,7 @@ class BatteryLevelReader : Service() {
                             TAG, "BluetoothGattCallback.onConnectionStateChange: "
                                     + "Paired but execute insecure test"
                         )
-                        mBluetoothGatt!!.disconnect()
+                        mBluetoothGatt.disconnect()
                         notifyMismatchInsecure()
                     } else {
                         notifyConnected()
@@ -292,13 +289,12 @@ class BatteryLevelReader : Service() {
                 } else if (status == BluetoothProfile.STATE_DISCONNECTED) {
                     mBleState = newState
                     mSecure = false
-                    mBluetoothGatt!!.close()
+                    mBluetoothGatt.close()
                     notifyDisconnected()
                 }
             } else {
                 showMessage("Failed to connect: $status , newState = $newState")
-                mBluetoothGatt!!.close()
-                mBluetoothGatt = null
+                mBluetoothGatt.close()
             }
         }
 
@@ -307,7 +303,7 @@ class BatteryLevelReader : Service() {
                 Log.d(TAG, "onServicesDiscovered: status=$status")
             }
             if (status == BluetoothGatt.GATT_SUCCESS &&
-                mBluetoothGatt!!.getService(SERVICE_UUID) != null
+                mBluetoothGatt.getService(SERVICE_UUID) != null
             ) {
                 notifyServicesDiscovered()
             }
@@ -425,9 +421,9 @@ class BatteryLevelReader : Service() {
     fun getConnectionState(device: BluetoothDevice?): Int {
         var connectionState = 0
         connectionState = if (BluetoothUtils.isA2dpDevice(device)) {
-            mBluetoothManager!!.getConnectionState(device, BluetoothProfile.A2DP)
+            mBluetoothManager.getConnectionState(device, BluetoothProfile.A2DP)
         } else if (BluetoothUtils.isInputDevice(device)) {
-            mBluetoothManager!!.getConnectionState(device, BluetoothProfile.HID_DEVICE)
+            mBluetoothManager.getConnectionState(device, BluetoothProfile.HID_DEVICE)
         } else {
             Log.d(TAG, "ignore connection state")
             -1

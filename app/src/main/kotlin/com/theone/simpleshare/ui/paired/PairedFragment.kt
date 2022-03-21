@@ -59,18 +59,21 @@ class PairedFragment : Fragment() {
     private fun setupRecyclerView() {
         mRecyclerAdapter = RecyclerAdapter()
         mRecyclerView = binding.recyclerView
-        mRecyclerView.setLayoutManager(LinearLayoutManager(mContext))
-        mRecyclerView.setLayoutManager(LinearLayoutManager(mContext, RecyclerView.VERTICAL, false))
-        mRecyclerView.setAdapter(mRecyclerAdapter)
-
+        mRecyclerView.apply {
+            setLayoutManager(LinearLayoutManager(mContext))
+            setLayoutManager(LinearLayoutManager(mContext, RecyclerView.VERTICAL, false))
+            setAdapter(mRecyclerAdapter)
+        }
         mRecyclerAdapter.setOnItemClickListener(object : RecyclerAdapter.OnItemClickListener{
             override fun onItemClick(v: View?, pos: Int, item: Item) {
                 Toast.makeText(mContext, " pos : " + pos + " name : " + item.name, Toast.LENGTH_SHORT).show()
                 Log.d(TAG, " pos : " + pos + " name : " + item.name)
                 val intent = Intent(mContext, BatteryLevelReader::class.java)
-                intent.setAction(BatteryLevelReader.BLUETOOTH_ACTION_GET_BONDED_DEVICES)
-                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
-                mContext.startService(intent)
+                intent.apply {
+                    setAction(BatteryLevelReader.BLUETOOTH_ACTION_GET_BONDED_DEVICES)
+                    putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
+                    mContext.startService(this)
+                }
             }
         })
 
@@ -81,10 +84,12 @@ class PairedFragment : Fragment() {
                 Toast.makeText(getActivity(), "onRightClicked : $position", Toast.LENGTH_SHORT)
                     .show()
                 val intent = Intent(mContext, BluetoothPairingService::class.java)
-                intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_REMOVE_BOND)
-                val item = mRecyclerAdapter.getItemFromList(position)
-                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
-                mContext.startService(intent)
+                with(intent){
+                    setAction(BluetoothPairingService.BLUETOOTH_ACTION_REMOVE_BOND)
+                    val item = mRecyclerAdapter.getItemFromList(position)
+                    putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
+                    mContext.startService(this)
+                }
                 mRecyclerAdapter.removeItemFromList(position)
             }
 
@@ -101,29 +106,7 @@ class PairedFragment : Fragment() {
             }
         })
     }
-    /*refresh rv*/
 
-    /*
-       BluetoothManager bluetoothManager = (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
-       BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
-
-       mRecyclerAdapter.clear();
-       Set<BluetoothDevice> devSet =  bluetoothAdapter.getBondedDevices();
-       if( devSet.size() != 0) {
-           for (BluetoothDevice device : devSet) {
-               pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, device.getName(),
-                       device.getAddress(), device));
-
-           }
-       } else {
-           //add dummy item
-           pairedViewModel.getList().getValue().add(new Item(R.drawable.ic_launcher_foreground, "empty",
-                         "empty", null));
-
-       }
-
-
-        */
     private fun bondedDevicesIntent (){
             /*refresh rv*/
             mRecyclerAdapter.clear()

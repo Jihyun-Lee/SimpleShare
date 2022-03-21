@@ -69,15 +69,17 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
         }
 
         init {
-            profile = itemView.findViewById(R.id.profile)
-            name = itemView.findViewById<TextView>(R.id.name)
-            address = itemView.findViewById<TextView>(R.id.address)
-            state = itemView.findViewById<TextView>(R.id.state)
-            batteryLevel = itemView.findViewById<TextView>(R.id.battery_level)
-            itemView.setOnClickListener { view ->
-                val pos: Int = getAdapterPosition()
-                if (pos != RecyclerView.NO_POSITION) {
-                    mListener.onItemClick(view, pos, mItemList[pos])
+            with(itemView) {
+                profile = findViewById(R.id.profile)
+                name = findViewById<TextView>(R.id.name)
+                address = findViewById<TextView>(R.id.address)
+                state = findViewById<TextView>(R.id.state)
+                batteryLevel = findViewById<TextView>(R.id.battery_level)
+                setOnClickListener { view ->
+                    val pos: Int = getAdapterPosition()
+                    if (pos != RecyclerView.NO_POSITION) {
+                        mListener.onItemClick(view, pos, mItemList[pos])
+                    }
                 }
             }
         }

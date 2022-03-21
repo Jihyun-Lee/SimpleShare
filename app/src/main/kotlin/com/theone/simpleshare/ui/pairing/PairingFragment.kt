@@ -56,42 +56,55 @@ class PairingFragment : Fragment() {
             }
 
         mRecyclerAdapter = RecyclerAdapter()
-        mRecyclerView = binding!!.recyclerView
-        mRecyclerView.setLayoutManager(LinearLayoutManager(mContext))
-        mRecyclerView.setLayoutManager(LinearLayoutManager(mContext, RecyclerView.VERTICAL, false))
-        mRecyclerView.setAdapter(mRecyclerAdapter)
+        mRecyclerView = binding.recyclerView
+        with(mRecyclerView) {
+            setLayoutManager(LinearLayoutManager(mContext))
+            setLayoutManager(LinearLayoutManager(mContext, RecyclerView.VERTICAL, false))
+            setAdapter(mRecyclerAdapter)
+        }
         mRecyclerAdapter.setOnItemClickListener (
             object : RecyclerAdapter.OnItemClickListener {
                 override fun onItemClick(v: View?, pos: Int, item: Item) {
                     //Toast.makeText(mContext, " pos : "+pos , Toast.LENGTH_SHORT).show();
                     val intent = Intent(mContext, BluetoothPairingService::class.java)
-                    intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_PAIRING)
-                    intent.putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
-                    Toast.makeText(mContext, "start pairing service", Toast.LENGTH_LONG).show()
-                    mContext.startService(intent)
+                    intent.apply {
+                        setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_PAIRING)
+                        putExtra(BluetoothDevice.EXTRA_DEVICE, item.device)
+                        Toast.makeText(mContext, "start pairing service", Toast.LENGTH_LONG).show()
+                        mContext.startService(this)
+                    }
+
                 }
             })
         mRecyclerAdapter.setItemList(itemViewModel.list.value)
-        binding.manualPairing.setOnClickListener {
-            val intent = Intent(mContext, BluetoothPairingService::class.java)
-            intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN)
-            Toast.makeText(mContext, "start scan", Toast.LENGTH_LONG).show()
-            mPairingMode = ParingMode.MANUAL_PAIRING_MODE
-            mContext.startService(intent)
+        with(binding) {
+            manualPairing.setOnClickListener {
+                val intent = Intent(mContext, BluetoothPairingService::class.java)
+                with(intent) {
+                    setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN)
+                    Toast.makeText(mContext, "start scan", Toast.LENGTH_LONG).show()
+                    mPairingMode = ParingMode.MANUAL_PAIRING_MODE
+                    mContext.startService(this)
+                }
+                /*refresh rv*/
+                mRecyclerAdapter.clear()
+            }
+            autoPairing.setOnClickListener {
+                val intent = Intent(mContext, BluetoothPairingService::class.java)
+                with(intent) {
+                    setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN)
+                    mContext.startService(this)
+                }
 
-            /*refresh rv*/
-            mRecyclerAdapter!!.clear()
+                Toast.makeText(mContext, "start auto pairing", Toast.LENGTH_LONG).show()
+                mPairingMode = ParingMode.AUTO_PAIRING_MODE
+                /*refresh rv*/
+                mRecyclerAdapter.clear()
+            }
+            bondedDevice.setOnClickListener {
+                drawBondedDevices()
+            }
         }
-        binding!!.autoPairing.setOnClickListener {
-            val intent = Intent(mContext, BluetoothPairingService::class.java)
-            intent.setAction(BluetoothPairingService.BLUETOOTH_ACTION_START_SCAN)
-            Toast.makeText(mContext, "start auto pairing", Toast.LENGTH_LONG).show()
-            mPairingMode = ParingMode.AUTO_PAIRING_MODE
-            mContext.startService(intent)
-            /*refresh rv*/
-            mRecyclerAdapter!!.clear()
-        }
-        binding.bondedDevice.setOnClickListener { drawBondedDevices() }
         return root
     }
 
@@ -99,6 +112,11 @@ class PairingFragment : Fragment() {
         val bluetoothManager: BluetoothManager =
             mContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val bluetoothAdapter: BluetoothAdapter = bluetoothManager.getAdapter()
+
+        with(bluetoothAdapter){
+            if(isDiscovering)
+                cancelDiscovery();
+        }
 
         /*refresh rv*/
         mRecyclerAdapter.clear()
@@ -108,7 +126,6 @@ class PairingFragment : Fragment() {
                     R.drawable.ic_launcher_foreground, device.getName(),
                     device.getAddress(), device, -1,-1)
             )
-
         }
     }
 
@@ -165,10 +182,6 @@ class PairingFragment : Fragment() {
         val filter = IntentFilter()
         filter.addAction(BluetoothDevice.ACTION_FOUND)
         mContext.registerReceiver(mBroadcast, filter)
-    }
-
-    override fun onPause() {
-        super.onPause()
     }
 
     override fun onDestroyView() {

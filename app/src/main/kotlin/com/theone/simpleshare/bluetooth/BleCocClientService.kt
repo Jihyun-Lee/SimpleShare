@@ -87,7 +87,7 @@ class BleCocClientService : Service() {
             IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
         )
         mBluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
-        mBluetoothAdapter = mBluetoothManager!!.adapter
+        mBluetoothAdapter = mBluetoothManager.adapter
         mScanner = mBluetoothAdapter.bluetoothLeScanner
         mHandler = Handler()
         mTaskQueue = TestTaskQueue(javaClass.name + "_taskHandlerThread")
@@ -97,7 +97,7 @@ class BleCocClientService : Service() {
         if (!mBluetoothAdapter.isEnabled) {
             notifyBluetoothDisabled()
         } else {
-            mTaskQueue!!.addTask({ onTestFinish(intent.action) }, EXECUTION_DELAY.toLong())
+            mTaskQueue.addTask({ onTestFinish(intent.action) }, EXECUTION_DELAY.toLong())
         }
         return START_NOT_STICKY
     }
@@ -127,12 +127,8 @@ class BleCocClientService : Service() {
                     readDataLargeBuf()
                 }
                 BLE_CLIENT_ACTION_CLIENT_DISCONNECT -> {
-                    if (mBluetoothGatt != null) {
-                        mBluetoothGatt.disconnect()
-                    }
-                    if (mChatService != null) {
-                        mChatService!!.stop()
-                    }
+                    mBluetoothGatt.disconnect()
+                    mChatService.stop()
                 }
                 else -> Log.e(TAG, "Error: Unhandled or invalid action=$mCurrentAction")
             }
@@ -145,52 +141,40 @@ class BleCocClientService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mBluetoothGatt != null) {
-            mBluetoothGatt.disconnect()
-            mBluetoothGatt.close()
 
-        }
+        mBluetoothGatt.disconnect()
+        mBluetoothGatt.close()
         stopScan()
         unregisterReceiver(mBondStatusReceiver)
-        if (mChatService != null) {
-            mChatService.stop()
-        }
+
+        mChatService.stop()
         mTaskQueue.quit()
     }
 
     private fun readCharacteristic(uuid: UUID) {
         val characteristic = getCharacteristic(uuid)
-        if (characteristic != null) {
-            mBluetoothGatt.readCharacteristic(characteristic)
-        }
+        mBluetoothGatt.readCharacteristic(characteristic)
     }
 
     private fun notifyError(message: String) {
         showMessage(message)
         Log.e(TAG, message)
-        val intent = Intent(BLE_CLIENT_ERROR)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_CLIENT_ERROR))
     }
 
-    private fun notifyMismatchSecure() {
-        val intent = Intent(BLE_BLUETOOTH_MISMATCH_SECURE)
-        sendBroadcast(intent)
-    }
+    private fun notifyMismatchSecure() =
+        sendBroadcast(Intent(BLE_BLUETOOTH_MISMATCH_SECURE))
 
-    private fun notifyMismatchInsecure() {
-        val intent = Intent(BLE_BLUETOOTH_MISMATCH_INSECURE)
-        sendBroadcast(intent)
-    }
+    private fun notifyMismatchInsecure() =
+        sendBroadcast(Intent(BLE_BLUETOOTH_MISMATCH_INSECURE))
 
-    private fun notifyBluetoothDisabled() {
-        val intent = Intent(BLE_BLUETOOTH_DISABLED)
-        sendBroadcast(intent)
-    }
+
+    private fun notifyBluetoothDisabled() =
+        sendBroadcast(Intent(BLE_BLUETOOTH_DISABLED))
 
     private fun notifyConnected() {
         showMessage("Bluetooth LE GATT connected")
-        val intent = Intent(BLE_LE_CONNECTED)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_LE_CONNECTED))
     }
 
     private fun startLeDiscovery() {
@@ -204,8 +188,7 @@ class BleCocClientService : Service() {
 
     private fun notifyDisconnected() {
         showMessage("Bluetooth LE disconnected")
-        val intent = Intent(BLE_BLUETOOTH_DISCONNECTED)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_BLUETOOTH_DISCONNECTED))
     }
 
     private fun notifyServicesDiscovered() {
@@ -220,11 +203,10 @@ class BleCocClientService : Service() {
     private val service: BluetoothGattService?
         private get() {
             var service: BluetoothGattService? = null
-            if (mBluetoothGatt != null) {
-                service = mBluetoothGatt!!.getService(SERVICE_UUID)
-                if (service == null) {
-                    showMessage("GATT Service not found")
-                }
+
+            service = mBluetoothGatt.getService(SERVICE_UUID)
+            if (service == null) {
+                showMessage("GATT Service not found")
             }
             return service
         }
@@ -242,7 +224,7 @@ class BleCocClientService : Service() {
     }
 
     private fun showMessage(msg: String) {
-        mHandler!!.post {
+        mHandler.post {
             Log.d(TAG, msg)
             Toast.makeText(this@BleCocClientService, msg, Toast.LENGTH_SHORT).show()
         }
@@ -296,7 +278,6 @@ class BleCocClientService : Service() {
             } else {
                 showMessage("Failed to connect: $status , newState = $newState")
                 mBluetoothGatt.close()
-
             }
         }
 
@@ -326,8 +307,7 @@ class BleCocClientService : Service() {
                     if (DEBUG) {
                         Log.d(TAG, "onCharacteristicRead: reading PSM=$mPsm")
                     }
-                    val intent = Intent(BLE_GOT_PSM)
-                    sendBroadcast(intent)
+                    sendBroadcast(Intent(BLE_GOT_PSM))
                 } else {
                     if (DEBUG) {
                         Log.d(TAG, "onCharacteristicRead: Note: unknown uuid=$uid")

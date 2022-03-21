@@ -106,8 +106,8 @@ class BleCocServerService : Service() {
         mGattServer = mBluetoothManager.openGattServer(this, mCallbacks)
         mService = createService()
 
-        mHandler = Handler()
-        if (!mBluetoothManager!!.adapter.isEnabled) {
+        mHandler = Handler(Looper.getMainLooper())
+        if (!mBluetoothManager.adapter.isEnabled) {
             notifyBluetoothDisabled()
         } else if (mGattServer == null) {
             notifyOpenFail()
@@ -122,15 +122,12 @@ class BleCocServerService : Service() {
         }
     }
 
-    private fun notifyBluetoothDisabled() {
-        val intent = Intent(BLE_BLUETOOTH_DISABLED)
-        sendBroadcast(intent)
-    }
+    private fun notifyBluetoothDisabled() =
+        sendBroadcast(Intent(BLE_BLUETOOTH_DISABLED))
 
-    private fun notifyMismatchSecure() {
-        val intent = Intent(BLE_BLUETOOTH_MISMATCH_SECURE)
-        sendBroadcast(intent)
-    }
+    private fun notifyMismatchSecure() =
+        sendBroadcast(Intent(BLE_BLUETOOTH_MISMATCH_SECURE))
+
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         val action = intent.action
@@ -246,31 +243,30 @@ class BleCocServerService : Service() {
         if (DEBUG) {
             Log.d(TAG, "notifyConnected")
         }
-        val intent = Intent(BLE_LE_CONNECTED)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_LE_CONNECTED))
     }
 
     private fun notifyDisconnected() {
         if (DEBUG) {
             Log.d(TAG, "notifyDisconnected")
         }
-        val intent = Intent(BLE_SERVER_DISCONNECTED)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_SERVER_DISCONNECTED))
     }
 
     private fun createService(): BluetoothGattService {
         val service = BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
         val characteristic = BluetoothGattCharacteristic(CHARACTERISTIC_UUID, 0x0A, 0x11)
-        characteristic.value = WRITE_VALUE.toByteArray()
-        val descriptor = BluetoothGattDescriptor(DESCRIPTOR_UUID, 0x11)
-        descriptor.value = WRITE_VALUE.toByteArray()
-        characteristic.addDescriptor(descriptor)
-        var descriptor_permission = BluetoothGattDescriptor(DESCRIPTOR_NO_READ_UUID, 0x10)
-        characteristic.addDescriptor(descriptor_permission)
-        descriptor_permission = BluetoothGattDescriptor(DESCRIPTOR_NO_WRITE_UUID, 0x01)
-        characteristic.addDescriptor(descriptor_permission)
-        service.addCharacteristic(characteristic)
-
+        with(characteristic){
+            value = WRITE_VALUE.toByteArray()
+            val descriptor = BluetoothGattDescriptor(DESCRIPTOR_UUID, 0x11)
+            descriptor.value = WRITE_VALUE.toByteArray()
+            addDescriptor(descriptor)
+            var descriptor_permission = BluetoothGattDescriptor(DESCRIPTOR_NO_READ_UUID, 0x10)
+            addDescriptor(descriptor_permission)
+            descriptor_permission = BluetoothGattDescriptor(DESCRIPTOR_NO_WRITE_UUID, 0x01)
+            addDescriptor(descriptor_permission)
+            service.addCharacteristic(this)
+        }
         // Registered the characteristic of PSM Value
         mLePsmCharacteristic = BluetoothGattCharacteristic(
             BleCocClientService.Companion.LE_PSM_CHARACTERISTIC_UUID,
@@ -282,13 +278,13 @@ class BleCocServerService : Service() {
     }
 
     private fun showMessage(msg: String) {
-        mHandler!!.post { Toast.makeText(this@BleCocServerService, msg, Toast.LENGTH_SHORT).show() }
+        mHandler.post { Toast.makeText(this@BleCocServerService, msg, Toast.LENGTH_SHORT).show() }
     }
 
     @Synchronized
     private fun cancelNotificationTaskOfSecureTestStartFailure() {
         if (mNotificationTaskOfSecureTestStartFailure != null) {
-            mHandler!!.removeCallbacks(mNotificationTaskOfSecureTestStartFailure!!)
+            mHandler.removeCallbacks(mNotificationTaskOfSecureTestStartFailure!!)
             mNotificationTaskOfSecureTestStartFailure = null
         }
     }
@@ -302,7 +298,7 @@ class BleCocServerService : Service() {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     mDevice = device
                     var bonded = false
-                    val pairedDevices = mBluetoothManager!!.adapter.bondedDevices
+                    val pairedDevices = mBluetoothManager.adapter.bondedDevices
                     if (pairedDevices.size > 0) {
                         for (target in pairedDevices) {
                             if (target.address == device.address) {
@@ -369,7 +365,7 @@ class BleCocServerService : Service() {
                 value = characteristic.value
                 finished = true
             }
-            mGattServer!!.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
+            mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
             val uid = characteristic.uuid
             if (uid == BleCocClientService.Companion.LE_PSM_CHARACTERISTIC_UUID) {
                 Log.d(TAG, "onCharacteristicReadRequest: reading PSM")
@@ -388,8 +384,7 @@ class BleCocServerService : Service() {
             return
         }
         showMessage("LE CoC Connection Type Checked")
-        val intent = Intent(BLE_CONNECTION_TYPE_CHECKED)
-        sendBroadcast(intent)
+        sendBroadcast(Intent(BLE_CONNECTION_TYPE_CHECKED))
     }
 
     private fun readData8bytes() {
@@ -532,7 +527,7 @@ class BleCocServerService : Service() {
         sendBroadcast(intent)
 
         // Set the PSM value in the PSM characteristics in the GATT Server.
-        mLePsmCharacteristic!!.setValue(mPsm, BluetoothGattCharacteristic.FORMAT_UINT8, 0)
+        mLePsmCharacteristic.setValue(mPsm, BluetoothGattCharacteristic.FORMAT_UINT8, 0)
     }
 
     private fun startAdvertise() {
@@ -548,7 +543,7 @@ class BleCocServerService : Service() {
             .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
             .setConnectable(true)
             .build()
-        mAdvertiser!!.startAdvertising(setting, data, mAdvertiseCallback)
+        mAdvertiser.startAdvertising(setting, data, mAdvertiseCallback)
     }
 
     private fun stopAdvertise() {
@@ -556,7 +551,7 @@ class BleCocServerService : Service() {
             Log.d(TAG, "stopAdvertise")
         }
         if (mAdvertiser != null) {
-            mAdvertiser!!.stopAdvertising(mAdvertiseCallback)
+            mAdvertiser.stopAdvertising(mAdvertiseCallback)
         }
     }
 

@@ -203,32 +203,37 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
         val itemView: View = viewHolder.itemView
         val p = Paint()
 
-        if (buttonShowedState == ButtonsState.LEFT_VISIBLE) {
-            val leftButton = RectF(
-                itemView.left.toFloat(), itemView.top.toFloat(),
-                itemView.left + buttonWidthWithoutPadding, itemView.bottom.toFloat()
-            )
-            p.color = Color.BLUE
-            c.drawRoundRect(leftButton, corners, corners, p)
-            drawText("EDIT", c, leftButton, p)
-            buttonInstance = leftButton
-        } else if (buttonShowedState == ButtonsState.RIGHT_VISIBLE) {
-            val rightButton = RectF(
-                itemView.right - buttonWidthWithoutPadding, itemView.top.toFloat(),
-                itemView.right.toFloat(), itemView.bottom.toFloat()
-            )
-            p.color = Color.RED
-            c.drawRoundRect(rightButton, corners, corners, p)
-            drawText("DELETE", c, rightButton, p)
-            buttonInstance = rightButton
+        with(itemView) {
+            if (buttonShowedState == ButtonsState.LEFT_VISIBLE) {
+                val leftButton = RectF(
+                    left.toFloat(), top.toFloat(),
+                    left + buttonWidthWithoutPadding, bottom.toFloat()
+                )
+                p.color = Color.BLUE
+                c.drawRoundRect(leftButton, corners, corners, p)
+                drawText("EDIT", c, leftButton, p)
+                buttonInstance = leftButton
+            } else if (buttonShowedState == ButtonsState.RIGHT_VISIBLE) {
+                val rightButton = RectF(
+                    right - buttonWidthWithoutPadding, top.toFloat(),
+                    right.toFloat(), bottom.toFloat()
+                )
+                p.color = Color.RED
+                c.drawRoundRect(rightButton, corners, corners, p)
+                drawText("DELETE", c, rightButton, p)
+                buttonInstance = rightButton
+            }
         }
     }
 
     private fun drawText(text: String, c: Canvas, button: RectF, p: Paint) {
+
+        with(p){
+            color = Color.WHITE
+            isAntiAlias = true
+            textSize = textSize
+        }
         val textSize = 30f
-        p.color = Color.WHITE
-        p.isAntiAlias = true
-        p.textSize = textSize
         val textWidth = p.measureText(text)
         c.drawText(text, button.centerX() - textWidth / 2, button.centerY() + textSize / 2, p)
     }

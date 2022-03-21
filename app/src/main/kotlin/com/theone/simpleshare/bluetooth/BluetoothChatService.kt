@@ -171,16 +171,12 @@ class BluetoothChatService {
     @Synchronized
     fun start(secure: Boolean) {
         if (D) Log.d(TAG, "start secure: " + secure + UUID.randomUUID() + " - " + UUID.randomUUID())
-
         // Cancel any thread attempting to make a connection
-        if (mConnectThread != null) {
-            mConnectThread.cancel()
-        }
+        mConnectThread.cancel()
+
 
         // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel()
-        }
+        mConnectedThread.cancel()
         state = STATE_LISTEN
 
         // Start the thread to listen on a BluetoothServerSocket
@@ -248,22 +244,14 @@ class BluetoothChatService {
         if (D) Log.d(TAG, "connected, Socket Type: $socketType")
 
         // Cancel the thread that completed the connection
-        if (mConnectThread != null) {
-            mConnectThread.cancel()
-        }
+        mConnectThread.cancel()
 
         // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel()
-        }
+        mConnectedThread.cancel()
 
         // Cancel the accept thread because we only want to connect to one device
-        if (mSecureAcceptThread != null) {
-            mSecureAcceptThread.cancel()
-        }
-        if (mInsecureAcceptThread != null) {
-            mInsecureAcceptThread.cancel()
-        }
+        mSecureAcceptThread.cancel()
+        mInsecureAcceptThread.cancel()
 
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = ConnectedThread(socket, socketType)
@@ -284,18 +272,10 @@ class BluetoothChatService {
     @Synchronized
     fun stop() {
         if (D) Log.d(TAG, "stop")
-        if (mConnectThread != null) {
-            mConnectThread.cancel()
-        }
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel()
-        }
-        if (mSecureAcceptThread != null) {
-            mSecureAcceptThread.cancel()
-        }
-        if (mInsecureAcceptThread != null) {
-            mInsecureAcceptThread.cancel()
-        }
+        mConnectThread.cancel()
+        mConnectedThread.cancel()
+        mSecureAcceptThread.cancel()
+        mInsecureAcceptThread.cancel()
         state = STATE_NONE
     }
 
@@ -418,25 +398,28 @@ class BluetoothChatService {
             mSocketType = if (secure) "Secure" else "Insecure"
 
             // Create a new listening server socket
-            try {
-                tmp = if (mBleTransport) {
-                    if (secure) {
-                        mAdapter.listenUsingL2capChannel()
+            mAdapter.apply {
+                try {
+                    mmServerSocket = if (mBleTransport) {
+                        if (secure) {
+                            listenUsingL2capChannel()
+                        } else {
+                            listenUsingInsecureL2capChannel()
+                        }
                     } else {
-                        mAdapter.listenUsingInsecureL2capChannel()
+                        if (secure) {
+                            listenUsingRfcommWithServiceRecord(NAME_SECURE, mUuid)
+                        } else {
+                            listenUsingInsecureRfcommWithServiceRecord(
+                                NAME_INSECURE,
+                                mUuid
+                            )
+                        }
                     }
-                } else {
-                    if (secure) {
-                        mAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE, mUuid)
-                    } else {
-                        mAdapter.listenUsingInsecureRfcommWithServiceRecord(NAME_INSECURE, mUuid)
-                    }
+
+                } catch (e: IOException) {
+                    Log.e(TAG, "Socket Type: $mSocketType, le: $mBleTransport listen() failed", e)
                 }
-            } catch (e: IOException) {
-                Log.e(TAG, "Socket Type: $mSocketType, le: $mBleTransport listen() failed", e)
-            }
-            if (tmp != null) {
-                mmServerSocket = tmp
             }
             if (mBleTransport) {
                 // Get the assigned PSM value
@@ -585,7 +568,7 @@ class BluetoothChatService {
          */
         fun write(buffer: ByteArray?) {
             try {
-                mmOutStream!!.write(buffer)
+                mmOutStream.write(buffer)
                 mmOutStream.flush()
 
                 // Share the sent message back to the UI Activity
@@ -614,8 +597,8 @@ class BluetoothChatService {
 
             // Get the BluetoothSocket input and output streams
             try {
-                tmpIn = socket!!.inputStream
-                tmpOut = socket.outputStream
+                tmpIn = socket?.inputStream
+                tmpOut = socket?.outputStream
             } catch (e: IOException) {
                 Log.e(TAG, "temp sockets not created", e)
             }
