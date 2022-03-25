@@ -12,8 +12,8 @@ import com.theone.simpleshare.viewmodel.Item
 import java.util.ArrayList
 
 class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
-    private lateinit var mItemList: ArrayList<Item>
-    var mContext: Context? = null
+    private var mItemList: ArrayList<Item> = ArrayList<Item>()
+    lateinit var mContext: Context
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view: View = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_recyclerview, parent, false)

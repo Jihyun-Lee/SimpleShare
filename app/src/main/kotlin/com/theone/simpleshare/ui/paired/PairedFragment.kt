@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,9 +24,12 @@ import com.theone.simpleshare.bluetooth.BluetoothPairingService
 import com.theone.simpleshare.databinding.FragmentPairedBinding
 import com.theone.simpleshare.viewmodel.Item
 import com.theone.simpleshare.viewmodel.ItemViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.ArrayList
 
+@AndroidEntryPoint
 class PairedFragment : Fragment() {
-    private lateinit var itemViewModel: ItemViewModel
+    private val itemViewModel: ItemViewModel by viewModels()
     private lateinit var binding: FragmentPairedBinding
     private lateinit var mContext: Context
     private lateinit var mRecyclerView: RecyclerView
@@ -35,19 +39,16 @@ class PairedFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        itemViewModel = ViewModelProvider(this).get(ItemViewModel::class.java)
+        //itemViewModel = ViewModelProvider(this).get(ItemViewModel::class.java)
         binding = FragmentPairedBinding.inflate(inflater, container, false)
         val root: View = binding.root
         mContext = activity as Context
-        itemViewModel.text.observe(getViewLifecycleOwner()){
-            s->
-                //textView.setText(s);
-        }
-        itemViewModel.list
-            .observe(getViewLifecycleOwner()){ it->
-                Log.d(TAG, "onChanged")
-                mRecyclerAdapter.notifyDataSetChanged()
-            }
+
+//        itemViewModel.getItemList()
+//            .observe(getViewLifecycleOwner()){ it->
+//                Log.d(TAG, "onChanged")
+//                mRecyclerAdapter.notifyDataSetChanged()
+//            }
         setupRecyclerView()
         bondedDevicesIntent()
         return root
@@ -77,7 +78,7 @@ class PairedFragment : Fragment() {
             }
         })
 
-        mRecyclerAdapter.setItemList(itemViewModel.list.value)
+        //mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>)
         mSwipeController = SwipeController(object : SwipeControllerActions() {
             override fun onRightClicked(position: Int) {
                 //Todo: remove bond
@@ -121,9 +122,7 @@ class PairedFragment : Fragment() {
     private val mBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action: String? = intent.action
-            if (action != null) {
-                Log.d(TAG, "Processing $action")
-            }
+            Log.d(TAG, "Processing $action")
             when (action) {
                 BatteryLevelReader.Companion.BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE -> {
                     val device: BluetoothDevice? =
@@ -136,15 +135,15 @@ class PairedFragment : Fragment() {
                         BatteryLevelReader.Companion.CONNECTION_STATE,
                         BatteryLevelReader.Companion.NO_CONNECTION_INFO
                     )
-                    itemViewModel.list.value?.add(
-                        Item(
+                    itemViewModel.insertItem(
+                        Item(1,
                             R.drawable.ic_launcher_foreground, device!!.name,
                             device.address, device, connectionState, battLevel
                         )
                     )
-                    mRecyclerAdapter.notifyItemInserted(
-                        itemViewModel.list.value!!.size - 1
-                    )
+//                    mRecyclerAdapter.notifyItemInserted(
+//                        itemViewModel.getItemList().value!!.size - 1
+//                    )
                 }
                 else -> Log.e(TAG, "onReceive: Error: unhandled action=$action")
             }
@@ -160,10 +159,6 @@ class PairedFragment : Fragment() {
         val filter = IntentFilter()
         filter.addAction(BatteryLevelReader.Companion.BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE)
         mContext.registerReceiver(mBroadcast, filter)
-    }
-
-    override fun onPause() {
-        super.onPause()
     }
 
     override fun onDestroyView() {

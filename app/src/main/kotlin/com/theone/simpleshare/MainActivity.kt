@@ -15,8 +15,9 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.theone.simpleshare.databinding.ActivityMainBinding
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private val TAG = "MainActivity"
@@ -78,7 +79,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
     companion object {
         private const val CTS_VERIFIER_PERMISSION_REQUEST = 1
     }

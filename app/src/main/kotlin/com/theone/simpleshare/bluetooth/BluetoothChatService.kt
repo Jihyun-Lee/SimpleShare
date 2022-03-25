@@ -223,7 +223,6 @@ class BluetoothChatService {
         // Cancel any thread currently running a connection
         mConnectedThread.cancel()
 
-
         // Start the thread to connect with the given device
         mConnectThread = ConnectThread(device, secure, psm)
         mConnectThread.start()
@@ -236,7 +235,7 @@ class BluetoothChatService {
      * @param device  The BluetoothDevice that has been connected
      */
     @Synchronized
-    fun connected(socket: BluetoothSocket?, device: BluetoothDevice, socketType: String?) {
+    fun connected(socket: BluetoothSocket, device: BluetoothDevice, socketType: String) {
         if (D) Log.d(TAG, "connected, Socket Type: $socketType")
 
         // Cancel the thread that completed the connection
@@ -332,7 +331,7 @@ class BluetoothChatService {
                         " BEGIN mAcceptThread" + this
             )
             name = "AcceptThread$mSocketType"
-            lateinit var socket: BluetoothSocket
+            var socket: BluetoothSocket
 
             // Listen to the server socket if we're not connected
             while (mState != STATE_CONNECTED) {
@@ -352,7 +351,7 @@ class BluetoothChatService {
                             // Situation normal. Start the connected thread.
                             socketConnectionType = socket.connectionType
                             connected(
-                                socket, socket.remoteDevice,
+                                socket!!, socket.remoteDevice,
                                 mSocketType
                             )
                         }
@@ -507,8 +506,6 @@ class BluetoothChatService {
             synchronized(this@BluetoothChatService) {
                 //mConnectThread = null
             }
-
-
             // Start the connected thread
             connected(mmSocket, mmDevice, mSocketType)
         }
@@ -527,8 +524,8 @@ class BluetoothChatService {
      * This thread runs during a connection with a remote device.
      * It handles all incoming and outgoing transmissions.
      */
-    internal inner class ConnectedThread(socket: BluetoothSocket?, socketType: String?) : Thread() {
-        private lateinit var mmSocket: BluetoothSocket
+    internal inner class ConnectedThread(socket: BluetoothSocket, socketType: String) : Thread() {
+        private var mmSocket: BluetoothSocket
         private lateinit var mmInStream: InputStream
         private lateinit var mmOutStream: OutputStream
         override fun run() {
@@ -580,24 +577,13 @@ class BluetoothChatService {
 
         init {
             Log.d(TAG, "create ConnectedThread: $socketType")
-            if (socket != null) {
-                mmSocket = socket
-            }
-            var tmpIn: InputStream? = null
-            var tmpOut: OutputStream? = null
-
+            mmSocket = socket
             // Get the BluetoothSocket input and output streams
             try {
-                tmpIn = socket?.inputStream
-                tmpOut = socket?.outputStream
+                mmInStream = socket.inputStream
+                mmOutStream = socket.outputStream
             } catch (e: IOException) {
                 Log.e(TAG, "temp sockets not created", e)
-            }
-            if (tmpIn != null) {
-                mmInStream = tmpIn
-            }
-            if (tmpOut != null) {
-                mmOutStream = tmpOut
             }
         }
     }

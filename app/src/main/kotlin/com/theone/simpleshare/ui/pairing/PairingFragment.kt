@@ -14,6 +14,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,10 +26,12 @@ import com.theone.simpleshare.bluetooth.BluetoothUtils.isInputDevice
 import com.theone.simpleshare.databinding.FragmentPairingBinding
 import com.theone.simpleshare.viewmodel.Item
 import com.theone.simpleshare.viewmodel.ItemViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
-
+//https://developer88.tistory.com/349
+@AndroidEntryPoint
 class PairingFragment : Fragment() {
-    private lateinit var itemViewModel: ItemViewModel
+    private val itemViewModel: ItemViewModel by viewModels()
     private lateinit var binding: FragmentPairingBinding
     private lateinit var mContext: Context
     private lateinit var mRecyclerView: RecyclerView
@@ -45,15 +49,12 @@ class PairingFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        itemViewModel = ViewModelProvider(this).get(ItemViewModel::class.java)
         binding = FragmentPairingBinding.inflate(inflater, container, false)
         val root: View = binding.root
         mContext = activity as Context
-        itemViewModel.list
-            .observe(getViewLifecycleOwner()){
-                items: ArrayList<Item> ->
-                    //Log.d(TAG, "onChanged")
-            }
+
+        //test
+        itemViewModel.deleteAll()
 
         mRecyclerAdapter = RecyclerAdapter()
         mRecyclerView = binding.recyclerView
@@ -76,7 +77,16 @@ class PairingFragment : Fragment() {
 
                 }
             })
-        mRecyclerAdapter.setItemList(itemViewModel.list.value)
+//        if ( itemViewModel.getItemList().value ==null){
+//            Log.d("easy", "item list is empty" )
+//            var list = ArrayList<Item>()
+//            val device:BluetoothDevice? = null
+//            list.add(Item(1,0,"empty","empty",device, -1,-1))
+//            mRecyclerAdapter.setItemList(list)
+//        } else {
+//            mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>?)
+//        }
+
         with(binding) {
             manualPairing.setOnClickListener {
                 val intent = Intent(mContext, BluetoothPairingService::class.java)
@@ -104,6 +114,26 @@ class PairingFragment : Fragment() {
             bondedDevice.setOnClickListener {
                 drawBondedDevices()
             }
+
+            roomDbTest.setOnClickListener {
+                itemViewModel.deleteAll()
+                for(i: Int in 1..10){
+                    itemViewModel.insertItem(
+                        Item(i, -1,"dev${i}", "empty", null, -1,-1)
+                    )
+                }
+                val list = itemViewModel.getItemList().value
+                if (list != null) {
+                    for (item:Item in list as ArrayList<Item>){
+                        Log.d(TAG, "DBG>>> " + item.toString())
+                    }
+                } else {
+                    Log.d(TAG,"list is null")
+                }
+
+
+            }
+
         }
         return root
     }
@@ -121,20 +151,21 @@ class PairingFragment : Fragment() {
         /*refresh rv*/
         mRecyclerAdapter.clear()
         for (device in bluetoothAdapter.getBondedDevices()) {
-            itemViewModel.list.value?.add(
-                Item(
+            itemViewModel.insertItem(
+                Item(1,
                     R.drawable.ic_launcher_foreground, device.getName(),
                     device.getAddress(), device, -1,-1)
             )
         }
     }
-
+    var itemId = 100
     private val mBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action: String? = intent.action
             if (action != null) {
                 Log.d(TAG, "Processing $action")
             }
+
             when (action) {
                 BluetoothDevice.ACTION_FOUND -> {
                     val device: BluetoothDevice? =
@@ -143,14 +174,15 @@ class PairingFragment : Fragment() {
                     device?.let { device ->
                         if (isA2dpDevice(device) || isInputDevice(device)) {
                             Log.d(TAG, "device : " + device.getName())
-                            itemViewModel.list.value?.add(
-                                Item(
+                            itemViewModel.insertItem(
+                                Item(itemId++,
                                     R.drawable.ic_launcher_foreground, device.getName(),
                                     device.getAddress(), device, -1,-1
                                 )
                             )
+                            mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>?)
                             mRecyclerAdapter.notifyItemInserted(
-                                itemViewModel.list.value!!.size
+                                itemViewModel.getItemList().value!!.size
                             )
                             if (mPairingMode == ParingMode.AUTO_PAIRING_MODE) {
                                 Toast.makeText(

@@ -38,9 +38,11 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.os.*
 import android.util.Log
+import dagger.hilt.android.AndroidEntryPoint
 import java.lang.Exception
 import java.util.*
 
+@AndroidEntryPoint
 class BluetoothPairingService : Service() {
     private var mBleState = BluetoothProfile.STATE_DISCONNECTED
 

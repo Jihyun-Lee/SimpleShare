@@ -15,7 +15,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.theone.simpleshare.bluetooth.BleCocServerService
 import com.theone.simpleshare.databinding.FragmentCocServerBinding
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class CocServerFragment : Fragment() {
     private lateinit var cocServerViewModel: CocServerViewModel
     private lateinit var binding: FragmentCocServerBinding
