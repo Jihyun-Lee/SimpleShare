@@ -39,16 +39,12 @@ class PairedFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        //itemViewModel = ViewModelProvider(this).get(ItemViewModel::class.java)
         binding = FragmentPairedBinding.inflate(inflater, container, false)
         val root: View = binding.root
         mContext = activity as Context
 
-//        itemViewModel.getItemList()
-//            .observe(getViewLifecycleOwner()){ it->
-//                Log.d(TAG, "onChanged")
-//                mRecyclerAdapter.notifyDataSetChanged()
-//            }
+        //clear room db
+        itemViewModel.deleteAll()
         setupRecyclerView()
         bondedDevicesIntent()
         return root
@@ -78,7 +74,7 @@ class PairedFragment : Fragment() {
             }
         })
 
-        //mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>)
+
         mSwipeController = SwipeController(object : SwipeControllerActions() {
             override fun onRightClicked(position: Int) {
                 //Todo: remove bond
@@ -119,6 +115,7 @@ class PairedFragment : Fragment() {
             }
 
     }
+    internal var itemId = 200
     private val mBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action: String? = intent.action
@@ -136,14 +133,15 @@ class PairedFragment : Fragment() {
                         BatteryLevelReader.Companion.NO_CONNECTION_INFO
                     )
                     itemViewModel.insertItem(
-                        Item(1,
+                        Item(itemId++,
                             R.drawable.ic_launcher_foreground, device!!.name,
                             device.address, device, connectionState, battLevel
                         )
                     )
-//                    mRecyclerAdapter.notifyItemInserted(
-//                        itemViewModel.getItemList().value!!.size - 1
-//                    )
+                    mRecyclerAdapter.notifyItemInserted(
+                        itemViewModel.getItemList().value!!.size - 1
+                    )
+                    mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>)
                 }
                 else -> Log.e(TAG, "onReceive: Error: unhandled action=$action")
             }

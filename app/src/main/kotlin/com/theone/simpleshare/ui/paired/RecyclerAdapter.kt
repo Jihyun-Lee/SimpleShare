@@ -12,7 +12,7 @@ import com.theone.simpleshare.viewmodel.Item
 import java.util.ArrayList
 
 class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
-    private lateinit var mItemList: ArrayList<Item>
+    private var mItemList: ArrayList<Item> = ArrayList<Item>()
     private lateinit var mListener: OnItemClickListener
     private lateinit var mContext: Context
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

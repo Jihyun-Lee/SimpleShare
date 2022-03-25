@@ -21,7 +21,7 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
     private var swipeBack = false
     private var buttonShowedState = ButtonsState.GONE
     private lateinit var buttonInstance: RectF
-    private lateinit var currentItemViewHolder: RecyclerView.ViewHolder
+    private var currentItemViewHolder: RecyclerView.ViewHolder? = null
     private lateinit var buttonsActions: SwipeControllerActions
     override fun getMovementFlags(
         recyclerView: RecyclerView,
@@ -239,7 +239,7 @@ internal class SwipeController(buttonsActions: SwipeControllerActions?) :
     }
 
     fun onDraw(c: Canvas) {
-        currentItemViewHolder.let { drawButtons(c, it) }
+        currentItemViewHolder?.let { drawButtons(c, it) }
     }
 
     companion object {
