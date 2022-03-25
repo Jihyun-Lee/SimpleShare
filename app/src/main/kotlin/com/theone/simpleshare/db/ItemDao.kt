@@ -16,12 +16,11 @@ interface ItemDao {
     fun insertItem(item : Item)
 
     @Query("DELETE FROM item_table WHERE device_name = :name")
-    fun deleteItem( name : String) : Unit
+    fun deleteItem( name : String)
 
     @Query("DELETE FROM item_table")
     fun deleteAll() : Unit
 
     @Query("SELECT * FROM item_table")
-    //fun getItemList() : LiveData<List<Item>>
     fun getItemList() : List<Item>
 }

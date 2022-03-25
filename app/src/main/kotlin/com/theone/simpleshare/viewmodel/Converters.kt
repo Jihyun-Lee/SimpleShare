@@ -1,6 +1,7 @@
 package com.theone.simpleshare.viewmodel
 
 import android.bluetooth.BluetoothDevice
+import android.os.Parcel
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.room.ProvidedTypeConverter
@@ -11,22 +12,17 @@ import com.google.gson.reflect.TypeToken
 @ProvidedTypeConverter
 class Converters {
     @TypeConverter
-    fun fromBluetoothDeviceToString(device:BluetoothDevice) : String{
-        val gson = Gson()
-
-        //return gson.toJson(device)
-        val str = gson.toJson(device)
-        
-        Log.d("easy","[1]dbg : "+ str)
-        return str
+    fun fromBluetoothDeviceToString(device:BluetoothDevice) : ByteArray{
+        val p = Parcel.obtain()
+        p.writeValue(device)
+        return p.marshall()
     }
     @TypeConverter
-    fun fromStringToBluetoothDevice( data : String ): BluetoothDevice {
-        val gson = Gson()
-        val objType = object : TypeToken<BluetoothDevice>(){
+    fun fromStringToBluetoothDevice( data : ByteArray ): BluetoothDevice {
+        val p = Parcel.obtain()
+        p.unmarshall(data, 0, data.size)
+        p.setDataPosition(0)
 
-        }.type
-        Log.d("easy","[2]dbg : "+ data)
-        return gson.fromJson(data, objType)
+        return p.readValue(BluetoothDevice::class.java.classLoader) as BluetoothDevice
     }
 }

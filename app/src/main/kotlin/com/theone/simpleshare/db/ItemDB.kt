@@ -6,7 +6,7 @@ import androidx.room.TypeConverters
 import com.theone.simpleshare.viewmodel.Converters
 import com.theone.simpleshare.viewmodel.Item
 
-@Database( entities = [Item::class], version=4 , exportSchema = false)
+@Database( entities = [Item::class], version=5 , exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ItemDB : RoomDatabase(){
     abstract fun itemDao() :ItemDao
