@@ -27,6 +27,10 @@ import com.theone.simpleshare.databinding.FragmentPairingBinding
 import com.theone.simpleshare.viewmodel.Item
 import com.theone.simpleshare.viewmodel.ItemViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import io.reactivex.internal.schedulers.IoScheduler
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import java.lang.Thread.sleep
 import java.util.ArrayList
 //https://developer88.tistory.com/349
 @AndroidEntryPoint
@@ -86,7 +90,6 @@ class PairingFragment : Fragment() {
 //        } else {
 //            mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>?)
 //        }
-
         with(binding) {
             manualPairing.setOnClickListener {
                 val intent = Intent(mContext, BluetoothPairingService::class.java)
@@ -116,24 +119,8 @@ class PairingFragment : Fragment() {
             }
 
             roomDbTest.setOnClickListener {
-                itemViewModel.deleteAll()
-                for(i: Int in 1..10){
-                    itemViewModel.insertItem(
-                        Item(i, -1,"dev${i}", "empty", null, -1,-1)
-                    )
-                }
-                val list = itemViewModel.getItemList().value
-                if (list != null) {
-                    for (item:Item in list as ArrayList<Item>){
-                        Log.d(TAG, "DBG>>> " + item.toString())
-                    }
-                } else {
-                    Log.d(TAG,"list is null")
-                }
-
 
             }
-
         }
         return root
     }

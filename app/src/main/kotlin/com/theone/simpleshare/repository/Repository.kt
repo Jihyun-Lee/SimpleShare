@@ -36,6 +36,7 @@ class Repository @Inject constructor(private val itemDao: ItemDao) {
 //            al.add(item)
 //            return MutableLiveData<List<Item>>(al)
 //        }
+
         return itemDao.getItemList()
     }
 }

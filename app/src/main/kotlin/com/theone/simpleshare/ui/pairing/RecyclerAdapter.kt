@@ -21,14 +21,13 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
         return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) =
         holder.onBind(mItemList[position])
-    }
 
 
-    override fun getItemCount(): Int {
-        return mItemList.size
-    }
+
+    override fun getItemCount(): Int = mItemList.size
+
 
     fun setItemList(list: ArrayList<Item>?) {
         if (list != null) {
