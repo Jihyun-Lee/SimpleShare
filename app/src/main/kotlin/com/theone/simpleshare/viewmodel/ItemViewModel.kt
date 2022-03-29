@@ -17,7 +17,6 @@ class ItemViewModel
 @Inject constructor(
     var repository: Repository
 ) : ViewModel() {
-    private lateinit var mItemList: LiveData<List<Item>>
 
     fun insertItem(item : Item) =
         repository.insertItem(item)
@@ -25,11 +24,9 @@ class ItemViewModel
     fun deleteItem(name : String) =
         repository.deleteItem(name)
 
-    fun deleteAll():Unit=
+    fun deleteAll():Unit =
         repository.deleteAll()
 
-    fun getItemList() : LiveData<List<Item>>{
-        mItemList = MutableLiveData<List<Item>>(repository.getItemList())
-        return mItemList
-    }
+    fun getItemList() : LiveData<List<Item>> =
+        repository.getItemList()
 }

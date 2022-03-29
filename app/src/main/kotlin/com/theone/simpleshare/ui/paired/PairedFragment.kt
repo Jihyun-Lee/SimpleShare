@@ -138,10 +138,15 @@ class PairedFragment : Fragment() {
                             device.address, device, connectionState, battLevel
                         )
                     )
-                    mRecyclerAdapter.notifyItemInserted(
-                        itemViewModel.getItemList().value!!.size - 1
-                    )
-                    mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>)
+                    with(mRecyclerAdapter){
+                        itemViewModel.getItemList().observe(this@PairedFragment){
+                            if (it != null){
+                                setItemList(it as ArrayList<Item>?)
+                                notifyItemInserted(it.size - 1)
+                            }
+                        }
+                    }
+
                 }
                 else -> Log.e(TAG, "onReceive: Error: unhandled action=$action")
             }

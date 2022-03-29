@@ -19,6 +19,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.theone.simpleshare.MainActivity
 import com.theone.simpleshare.R
 import com.theone.simpleshare.bluetooth.BluetoothPairingService
 import com.theone.simpleshare.bluetooth.BluetoothUtils.isA2dpDevice
@@ -27,11 +28,13 @@ import com.theone.simpleshare.databinding.FragmentPairingBinding
 import com.theone.simpleshare.viewmodel.Item
 import com.theone.simpleshare.viewmodel.ItemViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.qualifiers.ActivityContext
 import io.reactivex.internal.schedulers.IoScheduler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.lang.Thread.sleep
-import java.util.ArrayList
+import java.util.*
+
 //https://developer88.tistory.com/349
 @AndroidEntryPoint
 class PairingFragment : Fragment() {
@@ -81,6 +84,12 @@ class PairingFragment : Fragment() {
 
                 }
             })
+        val data =  itemViewModel.getItemList().observe(this){ list ->
+
+            mRecyclerAdapter.setItemList( list as ArrayList<Item>?)
+
+        }
+
 //        if ( itemViewModel.getItemList().value ==null){
 //            Log.d("easy", "item list is empty" )
 //            var list = ArrayList<Item>()
@@ -119,6 +128,22 @@ class PairingFragment : Fragment() {
             }
 
             roomDbTest.setOnClickListener {
+                itemViewModel.deleteAll()
+                for ( i in 0..10)
+                    itemViewModel.insertItem(Item(i+100,-1,"empty${i}","empty${i}",null,-1,-1))
+
+                val data = itemViewModel.getItemList()
+
+
+                data.observe( this@PairingFragment){
+                    if( it != null){
+                        for ( i in it){
+                            Log.d(TAG,"item ${i.toString()}")
+                        }
+                    } else {
+                        Log.d(TAG, "it is null")
+                    }
+                }
 
             }
         }
@@ -167,10 +192,13 @@ class PairingFragment : Fragment() {
                                     device.getAddress(), device, -1,-1
                                 )
                             )
-                            mRecyclerAdapter.setItemList(itemViewModel.getItemList().value as ArrayList<Item>?)
-                            mRecyclerAdapter.notifyItemInserted(
-                                itemViewModel.getItemList().value!!.size
-                            )
+                             itemViewModel.getItemList().observe(this@PairingFragment){
+                                with(mRecyclerAdapter){
+                                    setItemList( it as ArrayList<Item>?)
+                                    notifyItemInserted( it.size - 1 )
+                                }
+                            }
+
                             if (mPairingMode == ParingMode.AUTO_PAIRING_MODE) {
                                 Toast.makeText(
                                     mContext,

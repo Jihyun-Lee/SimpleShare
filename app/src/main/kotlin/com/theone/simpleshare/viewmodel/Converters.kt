@@ -12,17 +12,16 @@ import com.google.gson.reflect.TypeToken
 @ProvidedTypeConverter
 class Converters {
     @TypeConverter
-    fun fromBluetoothDeviceToString(device:BluetoothDevice) : ByteArray{
+    fun fromBluetoothDeviceToString(device:BluetoothDevice?) : ByteArray{
         val p = Parcel.obtain()
         p.writeValue(device)
         return p.marshall()
     }
     @TypeConverter
-    fun fromStringToBluetoothDevice( data : ByteArray ): BluetoothDevice {
+    fun fromStringToBluetoothDevice( data : ByteArray ): BluetoothDevice? {
         val p = Parcel.obtain()
         p.unmarshall(data, 0, data.size)
         p.setDataPosition(0)
-
-        return p.readValue(BluetoothDevice::class.java.classLoader) as BluetoothDevice
+        return p.readValue(BluetoothDevice::class.java.classLoader) as BluetoothDevice?
     }
 }

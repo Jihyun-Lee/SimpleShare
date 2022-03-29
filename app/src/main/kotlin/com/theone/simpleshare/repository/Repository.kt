@@ -14,29 +14,18 @@ import javax.inject.Inject
 
 class Repository @Inject constructor(private val itemDao: ItemDao) {
 
-    fun insertItem(item : Item){
+    fun insertItem(item : Item) =
         itemDao.insertItem(item)
-    }
 
-    fun deleteItem(name :String){
+    fun deleteItem(name :String) =
         itemDao.deleteItem(name)
-    }
-    fun deleteAll(){
+
+    fun deleteAll() =
         itemDao.deleteAll()
-    }
 
-    //fun getItemList() : LiveData<List<Item>> {
-    fun getItemList() : List<Item> {
-//        val list = itemDao.getItemList()
-//        if( list == null){
-//            Log.d("easy", "easy list empty" )
-//            val item = Item(-1,-1,"empty","empty"
-//                ,null,-1,-1)
-//            val al = ArrayList<Item>()
-//            al.add(item)
-//            return MutableLiveData<List<Item>>(al)
-//        }
+    //refer to following links https://stackoverflow.com/questions/44428389/livedata-getvalue-returns-null-with-room
+    //read value async by query so use observer to read data from LiveData
+    fun getItemList() : LiveData<List<Item>> =
+        itemDao.getItemList()
 
-        return itemDao.getItemList()
-    }
 }

@@ -22,5 +22,5 @@ interface ItemDao {
     fun deleteAll() : Unit
 
     @Query("SELECT * FROM item_table")
-    fun getItemList() : List<Item>
+    fun getItemList() : LiveData<List<Item>>
 }
