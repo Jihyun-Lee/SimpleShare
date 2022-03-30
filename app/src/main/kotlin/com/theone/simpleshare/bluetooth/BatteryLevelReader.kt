@@ -110,8 +110,7 @@ class BatteryLevelReader : Service() {
                     if (devSet.size != 0) {
                         for (device in devSet) {
                             mDevice = device
-                            if (mDevice.type == BluetoothDevice.DEVICE_TYPE_LE ||
-                                        mDevice.type == BluetoothDevice.DEVICE_TYPE_DUAL) {
+                            if (mDevice.type == BluetoothDevice.DEVICE_TYPE_LE) {
                                 // Only LE devices support GATT
                                 // Todo : need autoConnect???
                                 Log.d(TAG, "try connectGatt on " + mDevice.name)
@@ -121,8 +120,10 @@ class BatteryLevelReader : Service() {
                                     GattBatteryCallbacks()
                                 )
                             } else {
-                                if (mDevice.type == BluetoothDevice.DEVICE_TYPE_CLASSIC) {
-                                    Log.e(TAG, "DEVICE_TYPE_CLASSIC device..")
+                                if (mDevice.type == BluetoothDevice.DEVICE_TYPE_CLASSIC
+                                    || mDevice.type == BluetoothDevice.DEVICE_TYPE_DUAL
+                                    || mDevice.type == BluetoothDevice.DEVICE_TYPE_UNKNOWN) {
+                                    Log.e(TAG, "DEVICE_TYPE is ${mDevice.type}")
 
                                     Intent(BLUETOOTH_ACTION_NOTIFY_BONDED_DEVICE).apply {
                                         putExtra(BluetoothDevice.EXTRA_DEVICE, mDevice)
@@ -413,7 +414,7 @@ class BatteryLevelReader : Service() {
         }
     }
 
-    fun getConnectionState(device: BluetoothDevice?): Int {
+    fun getConnectionState(device: BluetoothDevice): Int {
         var connectionState = if (BluetoothUtils.isA2dpDevice(device)) {
             mBluetoothManager.getConnectionState(device, BluetoothProfile.A2DP)
         } else if (BluetoothUtils.isInputDevice(device)) {

@@ -19,12 +19,13 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    private var binding: ActivityMainBinding? = null
+    private val binding:ActivityMainBinding by lazy{
+        ActivityMainBinding.inflate(layoutInflater)
+    }
     private val TAG = "MainActivity"
     protected override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(getLayoutInflater())
-        setContentView(binding!!.root)
+        setContentView(binding.root)
         //val navView: BottomNavigationView = findViewById(R.id.nav_view)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         val navController: NavController =
             Navigation.findNavController(this, R.id.nav_host_fragment_activity_main)
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
-        NavigationUI.setupWithNavController(binding!!.navView, navController)
+        NavigationUI.setupWithNavController(binding.navView, navController)
         val perms = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,

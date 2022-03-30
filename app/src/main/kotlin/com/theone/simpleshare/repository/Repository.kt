@@ -1,15 +1,9 @@
 package com.theone.simpleshare.repository
 
-import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import com.theone.simpleshare.db.ItemDao
 import com.theone.simpleshare.viewmodel.Item
-import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.HiltAndroidApp
-import dagger.hilt.android.components.ActivityComponent
+
 import javax.inject.Inject
 
 class Repository @Inject constructor(private val itemDao: ItemDao) {

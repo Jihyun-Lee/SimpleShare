@@ -64,8 +64,8 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder?>() {
             profile.setImageResource(item.resourceId)
             name.text=item.name
             address.text=item.address
-            state.text = "" + item.state
-            batteryLevel.text = item.batteryLevel.toString() + "%"
+            state.text = if (item.state != -1) "" else ""
+            batteryLevel.text = if (item.batteryLevel != -1) "${item.batteryLevel}%" else ""
         }
 
         init {

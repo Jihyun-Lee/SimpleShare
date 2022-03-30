@@ -7,6 +7,7 @@ import androidx.room.*
 data class Item(
     @PrimaryKey(autoGenerate = true)
     var itemId:Int,
+    @ColumnInfo(name = "device_res_id")
     var resourceId: Int,
     @ColumnInfo(name = "device_name")
     var name: String?,

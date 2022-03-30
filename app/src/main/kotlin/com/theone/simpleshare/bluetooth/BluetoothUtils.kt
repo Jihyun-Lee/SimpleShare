@@ -46,6 +46,7 @@ import com.theone.simpleshare.bluetooth.BluetoothPairingService
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothProfile.ServiceListener
 import android.bluetooth.BluetoothA2dp
+import com.theone.simpleshare.R
 
 object BluetoothUtils {
     val MINOR_DEVICE_CLASS_POINTING = "0000010000000".toInt(2)
@@ -54,8 +55,8 @@ object BluetoothUtils {
     val MINOR_DEVICE_CLASS_KEYBOARD = "0000001000000".toInt(2)
     val MINOR_DEVICE_CLASS_REMOTE = "0000000001100".toInt(2)
     @JvmStatic
-    fun isInputDevice(device: BluetoothDevice?): Boolean {
-        val devClass = device!!.bluetoothClass.deviceClass
+    fun isInputDevice(device: BluetoothDevice): Boolean {
+        val devClass = device.bluetoothClass.deviceClass
         if (devClass and MINOR_DEVICE_CLASS_POINTING != 0) {
             return true
         } else if (devClass and MINOR_DEVICE_CLASS_JOYSTICK != 0) {
@@ -71,9 +72,17 @@ object BluetoothUtils {
     }
 
     @JvmStatic
-    fun isA2dpDevice(device: BluetoothDevice?): Boolean {
-        val devClass = device!!.bluetoothClass.deviceClass
+    fun isA2dpDevice(device: BluetoothDevice): Boolean {
+        val devClass = device.bluetoothClass.deviceClass
         return if (devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET || devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES || devClass == BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER || devClass == BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO || devClass == BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO) true else false
+    }
+    @JvmStatic
+    fun getResourceIcon(device: BluetoothDevice): Int {
+        var res = R.drawable.ic_baseline_bluetooth_24;
+        if(isA2dpDevice(device))
+            res = R.drawable.ic_baseline_headset_24
+        //todo add hid device
+        return res
     }
 
     const val HID_HOST = 4

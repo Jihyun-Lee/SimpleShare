@@ -21,17 +21,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.theone.simpleshare.R
 import com.theone.simpleshare.bluetooth.BatteryLevelReader
 import com.theone.simpleshare.bluetooth.BluetoothPairingService
+import com.theone.simpleshare.bluetooth.BluetoothUtils.getResourceIcon
 import com.theone.simpleshare.databinding.FragmentPairedBinding
 import com.theone.simpleshare.viewmodel.Item
 import com.theone.simpleshare.viewmodel.ItemViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.qualifiers.ActivityContext
 import java.util.ArrayList
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class PairedFragment : Fragment() {
     private val itemViewModel: ItemViewModel by viewModels()
     private lateinit var binding: FragmentPairedBinding
-    private lateinit var mContext: Context
+    private val mContext: Context by lazy { activity as Context }
+
     private lateinit var mRecyclerView: RecyclerView
     private lateinit var mRecyclerAdapter: RecyclerAdapter
     private lateinit var mSwipeController: SwipeController
@@ -41,7 +45,6 @@ class PairedFragment : Fragment() {
     ): View {
         binding = FragmentPairedBinding.inflate(inflater, container, false)
         val root: View = binding.root
-        mContext = activity as Context
 
         //clear room db
         itemViewModel.deleteAll()
@@ -77,7 +80,6 @@ class PairedFragment : Fragment() {
 
         mSwipeController = SwipeController(object : SwipeControllerActions() {
             override fun onRightClicked(position: Int) {
-                //Todo: remove bond
                 Toast.makeText(getActivity(), "onRightClicked : $position", Toast.LENGTH_SHORT)
                     .show()
                 val intent = Intent(mContext, BluetoothPairingService::class.java)
@@ -134,7 +136,7 @@ class PairedFragment : Fragment() {
                     )
                     itemViewModel.insertItem(
                         Item(itemId++,
-                            R.drawable.ic_launcher_foreground, device!!.name,
+                            getResourceIcon(device!!), device.name,
                             device.address, device, connectionState, battLevel
                         )
                     )

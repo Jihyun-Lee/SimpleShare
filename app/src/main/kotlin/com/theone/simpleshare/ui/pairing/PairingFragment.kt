@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.theone.simpleshare.MainActivity
 import com.theone.simpleshare.R
 import com.theone.simpleshare.bluetooth.BluetoothPairingService
+import com.theone.simpleshare.bluetooth.BluetoothUtils.getResourceIcon
 import com.theone.simpleshare.bluetooth.BluetoothUtils.isA2dpDevice
 import com.theone.simpleshare.bluetooth.BluetoothUtils.isInputDevice
 import com.theone.simpleshare.databinding.FragmentPairingBinding
@@ -128,22 +129,21 @@ class PairingFragment : Fragment() {
             }
 
             roomDbTest.setOnClickListener {
-                itemViewModel.deleteAll()
-                for ( i in 0..10)
-                    itemViewModel.insertItem(Item(i+100,-1,"empty${i}","empty${i}",null,-1,-1))
+              val fruits = listOf("apple","banna","kiwi","cherry")
+              val res=  fruits.asSequence().filter {
 
-                val data = itemViewModel.getItemList()
-
-
-                data.observe( this@PairingFragment){
-                    if( it != null){
-                        for ( i in it){
-                            Log.d(TAG,"item ${i.toString()}")
-                        }
-                    } else {
-                        Log.d(TAG, "it is null")
-                    }
+                    Log.d(TAG, "checking length of $it")
+                    it.length > 2
                 }
+                    .map {
+                        Log.d(TAG, "mapping to the length of $it")
+                        "${it.length}"
+                    }.take(2)
+
+
+                Log.d(TAG,"" +res.toList() )
+
+
 
             }
         }
@@ -188,7 +188,7 @@ class PairingFragment : Fragment() {
                             Log.d(TAG, "device : " + device.getName())
                             itemViewModel.insertItem(
                                 Item(itemId++,
-                                    R.drawable.ic_launcher_foreground, device.getName(),
+                                    getResourceIcon(device), device.getName(),
                                     device.getAddress(), device, -1,-1
                                 )
                             )
